@@ -1,0 +1,19 @@
+{
+  "name": "absolutezero",
+  "version": "0.0.1",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "live-server --open=index.html --port=3000"
+  },
+  "author": "Adrian Salgado <adriansalgado.wtch@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "openmeteo": "^1.2.3",
+    "p5": "^2.3.2"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.0"
+  }
+}
