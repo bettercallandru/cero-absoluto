@@ -3,18 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cero Absoluto - Test Local</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/p5@2.3.1/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5.sound@0.4.1/dist/p5.sound.min.js"></script>
-
-    <link rel="stylesheet" href="style.css" />
+    <title>Cero Absoluto</title>
   </head>
   <body>
-    <!-- Contenedor donde se renderizará el lienzo de p5 -->
+    <!-- p5 inyectará el lienzo dentro de este div -->
     <div id="canvas-container"></div>
 
-    <!-- Tu código JS -->
-    <script src="sketch.js"></script>
+    <!-- Único punto de entrada: Vite conecta el resto -->
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
