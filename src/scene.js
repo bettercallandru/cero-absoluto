@@ -74,11 +74,12 @@ export class SceneManager {
     this.scene.add(this.heartLight);
   }
 
+  // --- DENTRO DE initAvatarRenderer() EN scene.js ---
   initAvatarRenderer() {
     this.avatarGroup = new THREE.Group();
     this.scene.add(this.avatarGroup);
 
-    // Malla del Corazón Emisivo
+    // 1. Corazón Emisivo
     const heartGeo = new THREE.SphereGeometry(1, 32, 32);
     const heartMat = new THREE.MeshStandardMaterial({
       color: 0x00e5ff,
@@ -89,9 +90,25 @@ export class SceneManager {
     this.heartMesh = new THREE.Mesh(heartGeo, heartMat);
     this.avatarGroup.add(this.heartMesh);
 
-    // Grupo de Filamentos
+    // 2. Grupo de Filamentos Musculares
     this.strandsGroup = new THREE.Group();
     this.avatarGroup.add(this.strandsGroup);
+
+    // 3. Nube Volumétrica Celular del Avatar (NUEVO FASE 2)
+    this.cloudGeometry = new THREE.BufferGeometry();
+    this.cloudMaterial = new THREE.PointsMaterial({
+      size: 2.8,
+      color: 0x00e5ff,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.bodyCloudMesh = new THREE.Points(
+      this.cloudGeometry,
+      this.cloudMaterial,
+    );
+    this.avatarGroup.add(this.bodyCloudMesh);
   }
 
   initParticleSystem() {
@@ -99,10 +116,11 @@ export class SceneManager {
     this.scene.add(this.particleSystem.mesh);
   }
 
+  // --- DENTRO DE updateAvatar(stress, frameCount) EN scene.js ---
   updateAvatar(stress, frameCount) {
     const data = this.avatarEngine.updateFrameData(stress, frameCount);
 
-    // Actualizar Corazón
+    // A. Actualizar Corazón
     this.heartMesh.position.set(
       data.heart.position.x,
       data.heart.position.y,
@@ -118,7 +136,7 @@ export class SceneManager {
     this.heartLight.color = color;
     this.heartLight.position.copy(this.heartMesh.position);
 
-    // Reconstruir Filamentos con materiales reactivos al Bloom
+    // B. Actualizar Filamentos Musculares
     while (this.strandsGroup.children.length > 0) {
       const child = this.strandsGroup.children.pop();
       if (child.geometry) child.geometry.dispose();
@@ -128,7 +146,7 @@ export class SceneManager {
     const lineMaterial = new THREE.LineBasicMaterial({
       color: color,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.65,
     });
 
     for (let strandPoints of data.strands) {
@@ -137,6 +155,21 @@ export class SceneManager {
       const line = new THREE.Line(geometry, lineMaterial);
       this.strandsGroup.add(line);
     }
+
+    // C. Actualizar Nube Volumétrica Celular (NUEVO FASE 2)
+    const cloudPositions = new Float32Array(data.cloud.length * 3);
+    for (let i = 0; i < data.cloud.length; i++) {
+      cloudPositions[i * 3] = data.cloud[i].x;
+      cloudPositions[i * 3 + 1] = data.cloud[i].y;
+      cloudPositions[i * 3 + 2] = data.cloud[i].z;
+    }
+
+    this.cloudGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(cloudPositions, 3),
+    );
+    this.cloudGeometry.attributes.position.needsUpdate = true;
+    this.cloudMaterial.color = color;
   }
 
   addEvents() {
