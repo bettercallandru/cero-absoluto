@@ -1,6 +1,6 @@
 /**
- * MÓDULO ANATÓMICO: Motor de Anatomía Vectorial, Nube Celular y Deterioro (Fases 1, 2 y 3)
- * Cero Absoluto - Simulación de Pérdida de Coherencia Anatómica
+ * MÓDULO ANATÓMICO: Látice Cristalino (Cero Absoluto - Prototipo Alternativo)
+ * Estructura mineral/arquitectónica con dinámica de fractura geométrica.
  */
 
 function lerp(start, end, amt) {
@@ -58,20 +58,20 @@ export class AvatarEngine {
     };
 
     const poseStress = {
-      head: { x: -8, y: 102, z: 24 },
-      neck: { x: -4, y: 80, z: 15 },
-      shoulderL: { x: -30, y: 60, z: 22 },
-      shoulderR: { x: 28, y: 58, z: 22 },
-      elbowL: { x: -18, y: 12, z: 28 },
-      elbowR: { x: 18, y: 12, z: 28 },
-      handL: { x: -8, y: -24, z: 32 },
-      handR: { x: 8, y: -24, z: 32 },
-      hipL: { x: -14, y: -18, z: 6 },
-      hipR: { x: 14, y: -18, z: 6 },
-      kneeL: { x: -12, y: -70, z: 14 },
-      kneeR: { x: 12, y: -70, z: 14 },
-      footL: { x: -10, y: -130, z: 18 },
-      footR: { x: 10, y: -130, z: 18 },
+      head: { x: -10, y: 100, z: 25 },
+      neck: { x: -5, y: 78, z: 15 },
+      shoulderL: { x: -30, y: 58, z: 20 },
+      shoulderR: { x: 28, y: 56, z: 20 },
+      elbowL: { x: -15, y: 10, z: 30 },
+      elbowR: { x: 15, y: 10, z: 30 },
+      handL: { x: -5, y: -25, z: 35 },
+      handR: { x: 5, y: -25, z: 35 },
+      hipL: { x: -12, y: -16, z: 8 },
+      hipR: { x: 12, y: -16, z: 8 },
+      kneeL: { x: -10, y: -68, z: 15 },
+      kneeR: { x: 10, y: -68, z: 15 },
+      footL: { x: -8, y: -128, z: 20 },
+      footR: { x: 8, y: -128, z: 20 },
     };
 
     const pose = {};
@@ -89,32 +89,31 @@ export class AvatarEngine {
     if (stress < 0.5) {
       let t = map(stress, 0, 0.5, 0, 1);
       return {
-        r: lerp(0.05, 0.2, t),
-        g: lerp(0.5, 0.85, t),
-        b: lerp(0.95, 1.0, t),
+        r: lerp(0.0, 0.3, t),
+        g: lerp(0.7, 0.9, t),
+        b: lerp(0.9, 1.0, t),
       };
     } else {
       let t = map(stress, 0.5, 1.0, 0, 1);
       return {
-        r: lerp(0.2, 0.95, t),
-        g: lerp(0.85, 0.2, t),
-        b: lerp(1.0, 0.25, t),
+        r: lerp(0.3, 1.0, t),
+        g: lerp(0.9, 0.1, t),
+        b: lerp(1.0, 0.2, t),
       };
     }
   }
 
   /**
-   * Genera fascículos musculares con destrenzado tensional y desalineación por estrés
+   * Genera un segmento de Látice Polieledro con aristas rectas y fractura angular
    */
-  generateMuscleBundle(
+  generateCrystallineLattice(
     pStart,
     pEnd,
-    rJoint,
-    rBelly,
-    fiberCount,
+    radiusMax,
+    sides,
+    sections,
     stress,
     frameCount,
-    steps = 12,
   ) {
     const v = {
       x: pEnd.x - pStart.x,
@@ -122,174 +121,185 @@ export class AvatarEngine {
       z: pEnd.z - pStart.z,
     };
     const { u, w } = getOrthonormalBasis(v);
-    const fibers = [];
+    const ringRays = [];
 
-    // Factor de aflojamiento tensional (Aumento de radio y distorsión)
-    const slack = 1.0 + stress * 1.8;
+    // 1. Construir anillos poligonales a lo largo del segmento
+    for (let s = 0; s <= sections; s++) {
+      const t = s / sections;
+      const cx = lerp(pStart.x, pEnd.x, t);
+      const cy = lerp(pStart.y, pEnd.y, t);
+      const cz = lerp(pStart.z, pEnd.z, t);
 
-    for (let f = 0; f < fiberCount; f++) {
-      const angle = (f / fiberCount) * Math.PI * 2;
-      const points = [];
+      // Perfil de anchura rígido (facetado)
+      const radius = radiusMax * Math.sin(t * Math.PI) + 3;
+      const ringVertices = [];
 
-      for (let s = 0; s <= steps; s++) {
-        const t = s / steps;
+      // Cizallamiento tectónico por estrés (desplazamiento brusco en bloques)
+      const fractureShiftX =
+        Math.sign(Math.sin(s * 3.0 + this.timeOff)) * (stress * 12.0);
+      const fractureShiftZ =
+        Math.sign(Math.cos(s * 2.5 + this.timeOff)) * (stress * 12.0);
 
-        // Desfase Anatómico Temporal (Retardo de extremidades según distancia al núcleo)
-        const lagPhase =
-          Math.sin(frameCount * 0.06 - t * 3.0 + f) * (stress * 14.0);
+      for (let i = 0; i < sides; i++) {
+        const angle = (i / sides) * Math.PI * 2;
 
-        const cx = lerp(pStart.x, pEnd.x, t) + u.x * lagPhase * 0.3;
-        const cy = lerp(pStart.y, pEnd.y, t);
-        const cz = lerp(pStart.z, pEnd.z, t) + w.z * lagPhase * 0.3;
+        // Rotación de facetado rígido bajo estrés
+        const angularDislocation =
+          stress > 0.4 ? Math.floor(stress * 4) * 0.2 : 0;
+        const totalAngle = angle + angularDislocation;
 
-        // Pérdida de perfil muscular: El vientre se deforma impredeciblemente
-        const baseRadius =
-          (rJoint + (rBelly - rJoint) * Math.sin(t * Math.PI)) * slack;
-        const twist = angle + t * (0.8 - stress * 1.5); // El helicoide se destrenza
+        const vx =
+          cx +
+          (u.x * Math.cos(totalAngle) + w.x * Math.sin(totalAngle)) * radius +
+          fractureShiftX;
+        const vy =
+          cy +
+          (u.y * Math.cos(totalAngle) + w.y * Math.sin(totalAngle)) * radius;
+        const vz =
+          cz +
+          (u.z * Math.cos(totalAngle) + w.z * Math.sin(totalAngle)) * radius +
+          fractureShiftZ;
 
-        // Ruido tensional de dispersión en alta tensión
-        const noiseX = Math.sin(t * 10 + f + this.timeOff) * (stress * 8.0);
-        const noiseZ = Math.cos(t * 10 + f + this.timeOff) * (stress * 8.0);
-
-        const offsetX =
-          (u.x * Math.cos(twist) + w.x * Math.sin(twist)) * baseRadius + noiseX;
-        const offsetY =
-          (u.y * Math.cos(twist) + w.y * Math.sin(twist)) * baseRadius;
-        const offsetZ =
-          (u.z * Math.cos(twist) + w.z * Math.sin(twist)) * baseRadius + noiseZ;
-
-        points.push({
-          x: cx + offsetX,
-          y: cy + offsetY,
-          z: cz + offsetZ,
-        });
+        ringVertices.push({ x: vx, y: vy, z: vz });
       }
-      fibers.push(points);
+      ringRays.push(ringVertices);
     }
-    return fibers;
-  }
 
-  /**
-   * Nube celuloide con desprendimiento físico y evaporación según estrés
-   */
-  generateCellularCloud(strands, stress, frameCount) {
-    const cloudPoints = [];
-    const pulseSpeed = frameCount * 0.08;
+    // 2. Unir vértices para formar las aristas del Látice
+    const latticeStrands = [];
 
-    for (let i = 0; i < strands.length; i += 2) {
-      const fiber = strands[i];
-      for (let j = 0; j < fiber.length; j++) {
-        const pt = fiber[j];
-
-        // 1. Vibración celular base
-        let vibeX = Math.sin(pulseSpeed + i + j) * (1.2 + stress * 2.0);
-        let vibeY = Math.cos(pulseSpeed * 0.8 + i * 0.5) * (1.2 + stress * 2.0);
-        let vibeZ = Math.sin(pulseSpeed * 1.2 + j * 0.4) * (1.2 + stress * 2.0);
-
-        // 2. Desprendimiento Volumétrico (Evaporación atmosférica)
-        if (stress > 0.3) {
-          const detachFactor = Math.pow(stress, 2) * 35.0;
-          const driftAngle = (i + j) * 0.3 + this.timeOff;
-
-          vibeX += Math.cos(driftAngle) * detachFactor;
-          vibeY += Math.sin(pulseSpeed * 0.5 + j) * (detachFactor * 0.6); // Flotación ascendente/descendente
-          vibeZ += Math.sin(driftAngle) * detachFactor;
-        }
-
-        cloudPoints.push({
-          x: pt.x + vibeX,
-          y: pt.y + vibeY,
-          z: pt.z + vibeZ,
-        });
+    // Aristas Longitudinales
+    for (let i = 0; i < sides; i++) {
+      const line = [];
+      for (let s = 0; s <= sections; s++) {
+        line.push(ringRays[s][i]);
       }
+      latticeStrands.push(line);
     }
-    return cloudPoints;
+
+    // Aristas Anulares (Anillos transversales)
+    for (let s = 0; s <= sections; s++) {
+      const ring = ringRays[s];
+      const closedRing = [...ring, ring[0]]; // Cerrar el polígono
+      latticeStrands.push(closedRing);
+    }
+
+    return { latticeStrands, ringRays };
   }
 
   updateFrameData(stress, frameCount) {
-    this.timeOff += 0.008 + stress * 0.025;
+    this.timeOff += 0.005 + stress * 0.03;
     const pose = this.getAnatomyPose(stress);
     const color = this.getEmotionalColor(stress);
 
-    // Corazón / Núcleo
+    // Corazón Cúbico / Geométrico
     const heartY = (pose.neck.y + pose.hipL.y) * 0.45;
     const heartPulse =
-      Math.sin(frameCount * (0.04 + stress * 0.12)) * (2 + stress * 8);
+      Math.sin(frameCount * (0.05 + stress * 0.1)) * (2 + stress * 5);
     const heart = {
       position: { x: 0, y: heartY, z: 2 },
-      radius: 10 + heartPulse,
-      intensity: 0.6 + stress * 0.8,
+      radius: 8 + heartPulse,
+      intensity: 0.8 + stress * 0.7,
     };
 
-    // Definitivo de Fascículos Musculares 3D
-    const muscleGroups = [
-      { start: pose.head, end: pose.neck, rJoint: 6, rBelly: 12, count: 6 },
+    // Estructura de Secciones Cristalinas
+    const crystalGroups = [
+      { start: pose.head, end: pose.neck, radius: 10, sides: 6, sections: 3 },
       {
         start: pose.neck,
         end: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
-        rJoint: 12,
-        rBelly: 28,
-        count: 12,
+        radius: 22,
+        sides: 8,
+        sections: 5,
       },
       {
         start: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
         end: pose.hipL,
-        rJoint: 22,
-        rBelly: 18,
-        count: 8,
+        radius: 18,
+        sides: 6,
+        sections: 4,
       },
       {
         start: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
         end: pose.hipR,
-        rJoint: 22,
-        rBelly: 18,
-        count: 8,
+        radius: 18,
+        sides: 6,
+        sections: 4,
       },
       {
         start: pose.shoulderL,
         end: pose.elbowL,
-        rJoint: 9,
-        rBelly: 16,
-        count: 8,
+        radius: 14,
+        sides: 5,
+        sections: 3,
       },
       {
         start: pose.shoulderR,
         end: pose.elbowR,
-        rJoint: 9,
-        rBelly: 16,
-        count: 8,
+        radius: 14,
+        sides: 5,
+        sections: 3,
       },
-      { start: pose.elbowL, end: pose.handL, rJoint: 7, rBelly: 12, count: 6 },
-      { start: pose.elbowR, end: pose.handR, rJoint: 7, rBelly: 12, count: 6 },
-      { start: pose.hipL, end: pose.kneeL, rJoint: 12, rBelly: 22, count: 10 },
-      { start: pose.hipR, end: pose.kneeR, rJoint: 12, rBelly: 22, count: 10 },
-      { start: pose.kneeL, end: pose.footL, rJoint: 9, rBelly: 15, count: 8 },
-      { start: pose.kneeR, end: pose.footR, rJoint: 9, rBelly: 15, count: 8 },
+      {
+        start: pose.elbowL,
+        end: pose.handL,
+        radius: 10,
+        sides: 4,
+        sections: 3,
+      },
+      {
+        start: pose.elbowR,
+        end: pose.handR,
+        radius: 10,
+        sides: 4,
+        sections: 3,
+      },
+      { start: pose.hipL, end: pose.kneeL, radius: 16, sides: 6, sections: 4 },
+      { start: pose.hipR, end: pose.kneeR, radius: 16, sides: 6, sections: 4 },
+      { start: pose.kneeL, end: pose.footL, radius: 12, sides: 5, sections: 3 },
+      { start: pose.kneeR, end: pose.footR, radius: 12, sides: 5, sections: 3 },
     ];
 
     const strands = [];
-    for (let group of muscleGroups) {
-      const groupFibers = this.generateMuscleBundle(
+    const cloudNodes = [];
+
+    for (let group of crystalGroups) {
+      const { latticeStrands, ringRays } = this.generateCrystallineLattice(
         group.start,
         group.end,
-        group.rJoint,
-        group.rBelly,
-        group.count,
+        group.radius,
+        group.sides,
+        group.sections,
         stress,
         frameCount,
       );
-      strands.push(...groupFibers);
-    }
+      strands.push(...latticeStrands);
 
-    // Nube celular en desintegración progresiva
-    const cloud = this.generateCellularCloud(strands, stress, frameCount);
+      // Extraer los vértices del cristal para formar los nodos brillantes
+      for (let ring of ringRays) {
+        for (let pt of ring) {
+          // Desprendimiento de fragmentos cristalinos en estrés alto
+          let nodeX = pt.x;
+          let nodeY = pt.y;
+          let nodeZ = pt.z;
+
+          if (stress > 0.4) {
+            const shardDrift = (stress - 0.4) * 20.0;
+            nodeX += Math.sin(pt.y * 0.1 + this.timeOff) * shardDrift;
+            nodeZ += Math.cos(pt.x * 0.1 + this.timeOff) * shardDrift;
+          }
+
+          cloudNodes.push({ x: nodeX, y: nodeY, z: nodeZ });
+        }
+      }
+    }
 
     return {
       pose,
       color,
       heart,
       strands,
-      cloud,
+      cloud: cloudNodes,
     };
   }
 }
