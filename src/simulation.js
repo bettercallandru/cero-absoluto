@@ -1,5 +1,5 @@
 /**
- * MÓDULO 2: Motor de Simulación Temporal
+ * MÓDULO 2: Motor de Simulación Temporal (JS Nativo Puro)
  */
 
 export class SimulationEngine {
@@ -20,7 +20,7 @@ export class SimulationEngine {
     );
   }
 
-  update(frameCount, p) {
+  update(frameCount) {
     if (!this.weatherData.length) return;
 
     // Calcular el registro actual dentro del arreglo circular
@@ -29,24 +29,34 @@ export class SimulationEngine {
 
     if (stepIndex !== this.currentIndex) {
       this.currentIndex = stepIndex;
-      this.targetStress = this.calculateStress(this.getCurrentRecord(), p);
+      this.targetStress = this.calculateStress(this.getCurrentRecord());
     }
 
-    // Interpolación suave (lerp) usando el método de p5
-    this.currentStress = p.lerp(this.currentStress, this.targetStress, 0.05);
+    // Interpolación lineal matemática pura (lerp) sin depender de p5.js
+    this.currentStress = this.lerp(this.currentStress, this.targetStress, 0.05);
   }
 
   getCurrentRecord() {
     return this.weatherData[this.currentIndex] || {};
   }
 
-  calculateStress(record, p) {
+  calculateStress(record) {
     if (!record.precipitation_probability) return 0;
 
     let pFactor = record.precipitation_probability / 100.0;
-    let wFactor = p.constrain(record.wind_speed_180m / 45.0, 0.0, 1.0);
-    let hFactor = p.abs(50 - record.relative_humidity_2m) / 50.0;
+
+    // Reemplazo de p.constrain por Math.min/Math.max
+    let rawWFactor = record.wind_speed_180m / 45.0;
+    let wFactor = Math.min(Math.max(rawWFactor, 0.0), 1.0);
+
+    // Reemplazo de p.abs por Math.abs
+    let hFactor = Math.abs(50 - record.relative_humidity_2m) / 50.0;
 
     return pFactor * 0.4 + wFactor * 0.4 + hFactor * 0.2;
+  }
+
+  // Método auxiliar de interpolación matemática pura
+  lerp(start, end, amt) {
+    return (1 - amt) * start + amt * end;
   }
 }
