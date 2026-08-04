@@ -1,6 +1,6 @@
 /**
- * MÓDULO ANATÓMICO: Látice Cristalino (Cero Absoluto - Prototipo Alternativo)
- * Estructura mineral/arquitectónica con dinámica de fractura geométrica.
+ * MÓDULO ANATÓMICO: Látice Cristalino Refinado (Calidad Expositiva - Prioridad 1)
+ * Silueta estilizada, alta fragilidad anatómica y pose asimétrica pasiva.
  */
 
 function lerp(start, end, amt) {
@@ -39,39 +39,44 @@ export class AvatarEngine {
     this.timeOff = 0;
   }
 
+  /**
+   * Poses anatómicas con micro-desequilibrio asimétrico pasivo (Escultura viva)
+   */
   getAnatomyPose(stress) {
+    // Pose en Calma: Leve inclinación orgánica en hombros y cadera
     const poseCalm = {
-      head: { x: 0, y: 120, z: 0 },
-      neck: { x: 0, y: 92, z: 0 },
-      shoulderL: { x: -42, y: 72, z: 5 },
-      shoulderR: { x: 42, y: 72, z: -5 },
-      elbowL: { x: -58, y: 22, z: 15 },
-      elbowR: { x: 58, y: 22, z: -10 },
-      handL: { x: -48, y: -28, z: 25 },
-      handR: { x: 48, y: -25, z: -15 },
-      hipL: { x: -20, y: -22, z: 0 },
-      hipR: { x: 20, y: -22, z: 0 },
-      kneeL: { x: -26, y: -80, z: 10 },
-      kneeR: { x: 24, y: -80, z: -5 },
-      footL: { x: -22, y: -140, z: 15 },
-      footR: { x: 20, y: -140, z: -10 },
+      head: { x: 3, y: 124, z: 2 },
+      neck: { x: 0, y: 94, z: 0 },
+      shoulderL: { x: -36, y: 74, z: 2 },
+      shoulderR: { x: 36, y: 70, z: -4 }, // Hombro derecho sutilmente más bajo y atrás
+      elbowL: { x: -50, y: 24, z: 12 },
+      elbowR: { x: 48, y: 20, z: -12 },
+      handL: { x: -40, y: -26, z: 20 },
+      handR: { x: 42, y: -28, z: -18 },
+      hipL: { x: -17, y: -22, z: 2 },
+      hipR: { x: 17, y: -24, z: -2 }, // Larga inclinación pélvica pasiva
+      kneeL: { x: -21, y: -82, z: 8 },
+      kneeR: { x: 19, y: -84, z: -8 },
+      footL: { x: -17, y: -142, z: 12 },
+      footR: { x: 15, y: -142, z: -12 },
     };
 
+    // Pose bajo Estrés: Tensión comprimida hacia adelante y encogimiento tensional
     const poseStress = {
-      head: { x: -10, y: 100, z: 25 },
-      neck: { x: -5, y: 78, z: 15 },
-      shoulderL: { x: -30, y: 58, z: 20 },
-      shoulderR: { x: 28, y: 56, z: 20 },
-      elbowL: { x: -15, y: 10, z: 30 },
-      elbowR: { x: 15, y: 10, z: 30 },
-      handL: { x: -5, y: -25, z: 35 },
-      handR: { x: 5, y: -25, z: 35 },
-      hipL: { x: -12, y: -16, z: 8 },
-      hipR: { x: 12, y: -16, z: 8 },
-      kneeL: { x: -10, y: -68, z: 15 },
-      kneeR: { x: 10, y: -68, z: 15 },
-      footL: { x: -8, y: -128, z: 20 },
-      footR: { x: 8, y: -128, z: 20 },
+      head: { x: -8, y: 104, z: 26 },
+      neck: { x: -4, y: 82, z: 16 },
+      shoulderL: { x: -26, y: 62, z: 22 },
+      shoulderR: { x: 24, y: 58, z: 18 },
+      elbowL: { x: -14, y: 12, z: 28 },
+      elbowR: { x: 14, y: 8, z: 24 },
+      handL: { x: -4, y: -22, z: 32 },
+      handR: { x: 4, y: -24, z: 30 },
+      hipL: { x: -11, y: -16, z: 8 },
+      hipR: { x: 11, y: -18, z: 6 },
+      kneeL: { x: -9, y: -68, z: 16 },
+      kneeR: { x: 9, y: -70, z: 12 },
+      footL: { x: -7, y: -128, z: 20 },
+      footR: { x: 7, y: -130, z: 16 },
     };
 
     const pose = {};
@@ -89,22 +94,22 @@ export class AvatarEngine {
     if (stress < 0.5) {
       let t = map(stress, 0, 0.5, 0, 1);
       return {
-        r: lerp(0.0, 0.3, t),
-        g: lerp(0.7, 0.9, t),
-        b: lerp(0.9, 1.0, t),
+        r: lerp(0.0, 0.25, t),
+        g: lerp(0.75, 0.9, t),
+        b: lerp(0.95, 1.0, t),
       };
     } else {
       let t = map(stress, 0.5, 1.0, 0, 1);
       return {
-        r: lerp(0.3, 1.0, t),
-        g: lerp(0.9, 0.1, t),
-        b: lerp(1.0, 0.2, t),
+        r: lerp(0.25, 1.0, t),
+        g: lerp(0.9, 0.15, t),
+        b: lerp(1.0, 0.25, t),
       };
     }
   }
 
   /**
-   * Genera un segmento de Látice Polieledro con aristas rectas y fractura angular
+   * Genera el segmento polifacético con aristas cristalinas delgadas y fractura tectónica
    */
   generateCrystallineLattice(
     pStart,
@@ -123,29 +128,28 @@ export class AvatarEngine {
     const { u, w } = getOrthonormalBasis(v);
     const ringRays = [];
 
-    // 1. Construir anillos poligonales a lo largo del segmento
     for (let s = 0; s <= sections; s++) {
       const t = s / sections;
       const cx = lerp(pStart.x, pEnd.x, t);
       const cy = lerp(pStart.y, pEnd.y, t);
       const cz = lerp(pStart.z, pEnd.z, t);
 
-      // Perfil de anchura rígido (facetado)
-      const radius = radiusMax * Math.sin(t * Math.PI) + 3;
+      // Perfil de anchura con estilización en los extremos de la articulación
+      const radius = radiusMax * Math.sin(t * Math.PI) + 1.8;
       const ringVertices = [];
 
-      // Cizallamiento tectónico por estrés (desplazamiento brusco en bloques)
+      // Cizallamiento tectónico discontinuo (salto en bloques en alta tensión)
       const fractureShiftX =
-        Math.sign(Math.sin(s * 3.0 + this.timeOff)) * (stress * 12.0);
+        Math.sign(Math.sin(s * 3.5 + this.timeOff)) * (stress * 10.0);
       const fractureShiftZ =
-        Math.sign(Math.cos(s * 2.5 + this.timeOff)) * (stress * 12.0);
+        Math.sign(Math.cos(s * 2.8 + this.timeOff)) * (stress * 10.0);
 
       for (let i = 0; i < sides; i++) {
         const angle = (i / sides) * Math.PI * 2;
 
-        // Rotación de facetado rígido bajo estrés
+        // Dislocación angular rígida bajo estrés
         const angularDislocation =
-          stress > 0.4 ? Math.floor(stress * 4) * 0.2 : 0;
+          stress > 0.35 ? Math.floor(stress * 5) * 0.15 : 0;
         const totalAngle = angle + angularDislocation;
 
         const vx =
@@ -165,7 +169,6 @@ export class AvatarEngine {
       ringRays.push(ringVertices);
     }
 
-    // 2. Unir vértices para formar las aristas del Látice
     const latticeStrands = [];
 
     // Aristas Longitudinales
@@ -177,10 +180,10 @@ export class AvatarEngine {
       latticeStrands.push(line);
     }
 
-    // Aristas Anulares (Anillos transversales)
+    // Aristas Anulares (Anillos poligonales transversales)
     for (let s = 0; s <= sections; s++) {
       const ring = ringRays[s];
-      const closedRing = [...ring, ring[0]]; // Cerrar el polígono
+      const closedRing = [...ring, ring[0]];
       latticeStrands.push(closedRing);
     }
 
@@ -192,72 +195,93 @@ export class AvatarEngine {
     const pose = this.getAnatomyPose(stress);
     const color = this.getEmotionalColor(stress);
 
-    // Corazón Cúbico / Geométrico
+    // Corazón Geométrico Facetado (Icosaedro)
     const heartY = (pose.neck.y + pose.hipL.y) * 0.45;
     const heartPulse =
-      Math.sin(frameCount * (0.05 + stress * 0.1)) * (2 + stress * 5);
+      Math.sin(frameCount * (0.05 + stress * 0.1)) * (1.5 + stress * 4.0);
     const heart = {
       position: { x: 0, y: heartY, z: 2 },
-      radius: 8 + heartPulse,
+      radius: 6.5 + heartPulse,
       intensity: 0.8 + stress * 0.7,
     };
 
-    // Estructura de Secciones Cristalinas
+    // TABLA REFINADA DE SECCIONES ANATÓMICAS (Proporciones Esbeltas para Exhibición)
     const crystalGroups = [
-      { start: pose.head, end: pose.neck, radius: 10, sides: 6, sections: 3 },
+      // Cabeza: Nido denso de cristal (Alta frecuencia polifacética)
+      { start: pose.head, end: pose.neck, radius: 7.5, sides: 8, sections: 5 },
+
+      // Torso Superior y Pecho: Comprimido y elegante
       {
         start: pose.neck,
         end: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
-        radius: 22,
-        sides: 8,
-        sections: 5,
+        radius: 14.5,
+        sides: 7,
+        sections: 4,
       },
+
+      // Abdomen y Pelvis: Estructura ósea limpia
       {
         start: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
         end: pose.hipL,
-        radius: 18,
+        radius: 11.0,
         sides: 6,
         sections: 4,
       },
       {
         start: { x: 0, y: (pose.neck.y + pose.hipL.y) / 2, z: 0 },
         end: pose.hipR,
-        radius: 18,
+        radius: 11.0,
         sides: 6,
         sections: 4,
       },
+
+      // Extremidades Superiores: Hilos cristalinos ligeros
       {
         start: pose.shoulderL,
         end: pose.elbowL,
-        radius: 14,
+        radius: 6.5,
         sides: 5,
-        sections: 3,
+        sections: 4,
       },
       {
         start: pose.shoulderR,
         end: pose.elbowR,
-        radius: 14,
+        radius: 6.5,
         sides: 5,
-        sections: 3,
+        sections: 4,
       },
       {
         start: pose.elbowL,
         end: pose.handL,
-        radius: 10,
+        radius: 4.0,
         sides: 4,
         sections: 3,
       },
       {
         start: pose.elbowR,
         end: pose.handR,
-        radius: 10,
+        radius: 4.0,
         sides: 4,
         sections: 3,
       },
-      { start: pose.hipL, end: pose.kneeL, radius: 16, sides: 6, sections: 4 },
-      { start: pose.hipR, end: pose.kneeR, radius: 16, sides: 6, sections: 4 },
-      { start: pose.kneeL, end: pose.footL, radius: 12, sides: 5, sections: 3 },
-      { start: pose.kneeR, end: pose.footR, radius: 12, sides: 5, sections: 3 },
+
+      // Extremidades Inferiores: Apoyo vertical elongado (Giacometti-like)
+      { start: pose.hipL, end: pose.kneeL, radius: 9.0, sides: 6, sections: 4 },
+      { start: pose.hipR, end: pose.kneeR, radius: 9.0, sides: 6, sections: 4 },
+      {
+        start: pose.kneeL,
+        end: pose.footL,
+        radius: 5.0,
+        sides: 5,
+        sections: 3,
+      },
+      {
+        start: pose.kneeR,
+        end: pose.footR,
+        radius: 5.0,
+        sides: 5,
+        sections: 3,
+      },
     ];
 
     const strands = [];
@@ -275,18 +299,17 @@ export class AvatarEngine {
       );
       strands.push(...latticeStrands);
 
-      // Extraer los vértices del cristal para formar los nodos brillantes
+      // Extraer vértices para los nodos celuloides de cristal
       for (let ring of ringRays) {
         for (let pt of ring) {
-          // Desprendimiento de fragmentos cristalinos en estrés alto
           let nodeX = pt.x;
           let nodeY = pt.y;
           let nodeZ = pt.z;
 
-          if (stress > 0.4) {
-            const shardDrift = (stress - 0.4) * 20.0;
-            nodeX += Math.sin(pt.y * 0.1 + this.timeOff) * shardDrift;
-            nodeZ += Math.cos(pt.x * 0.1 + this.timeOff) * shardDrift;
+          if (stress > 0.35) {
+            const shardDrift = (stress - 0.35) * 16.0;
+            nodeX += Math.sin(pt.y * 0.12 + this.timeOff) * shardDrift;
+            nodeZ += Math.cos(pt.x * 0.12 + this.timeOff) * shardDrift;
           }
 
           cloudNodes.push({ x: nodeX, y: nodeY, z: nodeZ });
