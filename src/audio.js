@@ -1,6 +1,6 @@
 /**
- * MÓDULO DE AUDIO: Síntesis Cinemática Orgánica (Tone.js)
- * Cero Absoluto - Voltaje 14
+ * MÓDULO DE AUDIO: Síntesis Mineral y Cristalina (Tone.js)
+ * Cero Absoluto - Calidad Expositiva (Prioridad 3)
  */
 import * as Tone from "tone";
 
@@ -9,150 +9,173 @@ export class AudioManager {
     this.isStarted = false;
     this.lastPulseTime = 0;
 
-    // --- 1. CADENA DE EFECTOS MAESTROS (Ambiente Espacial) ---
-    // Reverberación convolutiva amplia para dar sensación de catedral/subterráneo
+    // --- 1. CADENA DE EFECTOS MAESTROS (Catedral de Hielo / Galería) ---
     this.reverb = new Tone.Reverb({
-      decay: 8, // Cola de reverberación de 8 segundos
-      preDelay: 0.1,
-      wet: 0.5, // 50% señal procesada
+      decay: 6,
+      preDelay: 0.08,
+      wet: 0.45,
     });
 
-    // Filtro Pasa-Altos Maestro para limpiar graves indeseados en la sala
     this.masterFilter = new Tone.Filter({
-      frequency: 40,
+      frequency: 35,
       type: "highpass",
     });
 
-    // Limitador para evitar saturación y proteger los parlantes de la sala
-    this.limiter = new Tone.Limiter(-2); // -2dB límite
+    this.limiter = new Tone.Limiter(-1.5);
 
-    // Conexión del bus maestro: Efectos -> Limitador -> Salida
     this.reverb.connect(this.masterFilter);
     this.masterFilter.connect(this.limiter);
     this.limiter.toDestination();
 
-    // --- 2. CAPA AMBIENTAL 1: PolySynth Orgánico (Textura Armónica) ---
-    // Un sintetizador de tonos ricos que simula instrumentos de cuerda agudos/oscuros
+    // --- 2. TEXTURA AMBIENTAL CRISTALINA: Dron Helado Resonante ---
     this.droneSynth = new Tone.PolySynth(Tone.Synth, {
       oscillator: {
-        type: "fatsawtooth", // CORREGIDO: 'fatsawtooth' en lugar de 'fatfat'
-        count: 3, // Apila 3 osciladores desafinados entre sí
-        spread: 20, // Desafinación de 20 cents para dar textura orgánica/análoga
+        type: "fatsawtooth",
+        count: 3,
+        spread: 15,
       },
       envelope: {
-        attack: 3,
+        attack: 2.5,
         decay: 2,
-        sustain: 0.9,
-        release: 4,
+        sustain: 0.85,
+        release: 3.5,
       },
     });
 
     this.droneFilter = new Tone.Filter({
-      frequency: 180,
+      frequency: 220,
       type: "lowpass",
-      rolloff: -24, // Caída suave de frecuencias
+      rolloff: -24,
     });
 
-    // Modulación lenta de LFO para que la atmósfera "respire" de forma orgánica
     this.droneLFO = new Tone.LFO({
-      frequency: 0.08, // Ciclo muy lento (12.5 segundos)
-      min: 120,
-      max: 450,
+      frequency: 0.06,
+      min: 150,
+      max: 500,
     }).start();
 
     this.droneLFO.connect(this.droneFilter.frequency);
     this.droneSynth.connect(this.droneFilter);
     this.droneFilter.connect(this.reverb);
 
-    // --- 3. CAPA AMBIENTAL 2: Ruido Rosa Filtro-Modulado (Presión Atmosférica) ---
-    // Simula la sensación física de viento, frío y turbulencia en la montaña
+    // --- 3. FRICCIÓN Y PRESION ATMOSFÉRICA (Ruido Resonante) ---
     this.noise = new Tone.Noise("pink").start();
 
-    this.noiseFilter = new Tone.AutoFilter({
-      frequency: 0.05, // Velocidad del LFO (muy lenta)
-      baseFrequency: 80, // Frecuencia base del filtro
-      octaves: 3, // Cuántas octavas subirá a partir de la base
-      filter: {
-        type: "bandpass", // CORREGIDO: El tipo de filtro va dentro del objeto 'filter'
-      },
-    }).start();
+    this.noiseFilter = new Tone.Filter({
+      frequency: 1200,
+      type: "bandpass",
+      Q: 3.0, // Alta resonancia para simular fricción cortante
+    });
 
-    this.noiseVolume = new Tone.Volume(-30); // Inicia tenue en el fondo
+    this.noiseVolume = new Tone.Volume(-32);
     this.noise.chain(this.noiseFilter, this.noiseVolume, this.reverb);
 
-    // --- 4. CAPA IMPACTO / CORAZÓN: FM Synth (Estructura Ósea/Metálica) ---
-    // Síntesis FM (Frecuencia Modulada) para un impacto sombrío con armónicos metálicos
+    // --- 4. SÍNTESIS DE FRACTURA / SNAP CRISTALINO (Metálico / Agudo) ---
+    // Sintetizador MetalSynth dedicado a los colapsos tectónicos del látice
+    this.crystalSnapSynth = new Tone.MetalSynth({
+      frequency: 320,
+      envelope: {
+        attack: 0.001,
+        decay: 0.25,
+        release: 0.1,
+      },
+      harmonicity: 5.1,
+      modulationIndex: 32,
+      resonance: 4000,
+      octaves: 1.5,
+    });
+
+    this.snapVolume = new Tone.Volume(-6);
+    this.crystalSnapSynth.chain(this.snapVolume, this.reverb);
+
+    // --- 5. IMPACTO DE GRAVES TECTÓNICOS (Sub-seísmo) ---
     this.impactSynth = new Tone.FMSynth({
-      harmonicity: 1.5,
-      modulationIndex: 3,
+      harmonicity: 2.0,
+      modulationIndex: 4,
       oscillator: { type: "sine" },
-      envelope: { attack: 0.005, decay: 0.8, sustain: 0.01, release: 2 },
+      envelope: { attack: 0.002, decay: 0.6, sustain: 0.0, release: 1.2 },
       modulation: { type: "triangle" },
-      modulationEnvelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 1 },
+      modulationEnvelope: {
+        attack: 0.005,
+        decay: 0.3,
+        sustain: 0,
+        release: 0.5,
+      },
     });
 
     this.impactDistortion = new Tone.Distortion({
-      distortion: 0.1,
-      wet: 0.2,
+      distortion: 0.15,
+      wet: 0.25,
     });
 
     this.impactSynth.chain(this.impactDistortion, this.reverb);
   }
 
-  /**
-   * Inicialización requerida por interactividad del usuario
-   */
   async start() {
     if (!this.isStarted) {
       await Tone.start();
-      await this.reverb.generate(); // Generar respuesta de impulso
+      await this.reverb.generate();
 
-      console.log("🌌 Diseño sonoro cinemático iniciado.");
+      console.log("💎 Motor de sonido cristalino activado.");
 
-      // Acorde inicial atmosférico de bienvenida (Do menor abierto: C2, G2, Eb3)
-      this.droneSynth.triggerAttack(["C2", "G2", "Eb3"], undefined, 0.25);
+      // Acorde helado abierto en tono de cristal (C# menor / E mayor)
+      this.droneSynth.triggerAttack(["C#2", "G#2", "E3", "B3"], undefined, 0.2);
       this.isStarted = true;
     }
   }
 
   /**
-   * Actualización dinámica sintonizada con el estrés y el clima
+   * Disparo síncrono de fractura metálica / cuarzo
    */
-  update(stress, temperature, windSpeed) {
+  triggerTectonicSnap(magnitude = 0.2) {
+    if (!this.isStarted) return;
+
+    const now = Tone.now();
+    // Volumen adaptado a la intensidad del salto discontinuo
+    const gainDb = -12 + Math.min(magnitude * 15, 10);
+    this.snapVolume.volume.setValueAtTime(gainDb, now);
+
+    // Frecuencias estridentes e inarmónicas según magnitud
+    const freq = 400 + magnitude * 1200;
+    this.crystalSnapSynth.triggerAttackRelease(freq, "32n", now);
+  }
+
+  /**
+   * Actualización dinámica sintonizada con el estrés y eventos Voronoi
+   */
+  update(stress, temperature, windSpeed, isSnap = false, snapMagnitude = 0.0) {
     if (!this.isStarted) return;
 
     const now = Tone.now();
 
-    // A. EXPANSIÓN ARMÓNICA CON EL ESTRÉS
-    // Modificamos los límites del LFO en lugar del filtro directamente
-    let targetMin = Tone.mtof(Tone.ftom(120) + stress * 60);
-    let targetMax = Tone.mtof(Tone.ftom(450) + stress * 60);
-
-    // Tone.js permite reasignar min y max del LFO sobre la marcha
+    // A. EXPANSIÓN DE FRECUENCIAS Y REFINAMIENTO DE LFO
+    let targetMin = Tone.mtof(Tone.ftom(150) + stress * 80);
+    let targetMax = Tone.mtof(Tone.ftom(500) + stress * 120);
     this.droneLFO.min = targetMin;
     this.droneLFO.max = targetMax;
 
-    // B. TEXTURA DE VIENTO / PRESION (Noise Volume)
-    // El viento físico y el estrés aumentan la presencia del ruido rosa en la sala (-28dB a -10dB)
-    let targetNoiseVol = -28 + (windSpeed / 50.0) * 10 + stress * 8;
-    this.noiseVolume.volume.rampTo(targetNoiseVol, 0.3);
+    // B. FRICCIÓN DE VIENTO Y REJILLA MINERAL
+    let targetNoiseVol = -30 + (windSpeed / 50.0) * 8 + stress * 12;
+    this.noiseVolume.volume.rampTo(targetNoiseVol, 0.2);
+    this.noiseFilter.frequency.setValueAtTime(800 + stress * 2200, now);
 
-    // C. RITMO Y DISTORSIÓN DEL IMPACTO ORGÁNICO
-    // Aumenta la agresividad FM de los impactos a medida que el avatar entra en crisis
-    this.impactSynth.modulationIndex.value = 1.5 + stress * 12.0;
-    this.impactDistortion.distortion = Math.min(stress * 0.7, 0.85);
-    this.impactDistortion.wet.value = stress * 0.6;
+    // C. RESPUESTA SÍNCRONA A FRACTURAS TECTÓNICAS (Voronoi Snap)
+    if (isSnap) {
+      this.triggerTectonicSnap(snapMagnitude);
+    }
 
-    // Intervalo cardíaco variable (2.2s en reposo hasta 0.35s en estrés máximo)
-    let pulseInterval = Tone.Time(2.2 - stress * 1.85).toSeconds();
+    // D. PULSO CARDÍACO / SUB-SEÍSMICO BASE
+    this.impactSynth.modulationIndex.value = 1.5 + stress * 10.0;
+    this.impactDistortion.distortion = Math.min(stress * 0.6, 0.8);
+
+    let pulseInterval = Tone.Time(2.4 - stress * 1.95).toSeconds();
 
     if (now - this.lastPulseTime >= pulseInterval) {
-      // Cambio de tono cinemático según el estrés
-      let pitch = "C1";
-      if (stress > 0.45) pitch = "G0";
-      if (stress > 0.75) pitch = "Eb1";
+      let pitch = "C#1";
+      if (stress > 0.4) pitch = "G#0";
+      if (stress > 0.75) pitch = "E0";
 
-      let velocity = 0.4 + stress * 0.6;
+      let velocity = 0.35 + stress * 0.65;
       this.impactSynth.triggerAttackRelease(pitch, "16n", now, velocity);
       this.lastPulseTime = now;
     }

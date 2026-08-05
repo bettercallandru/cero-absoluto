@@ -215,12 +215,14 @@ export class SceneManager {
         // 3. Oscilación de la cámara / avatar
         this.avatarGroup.rotation.y = Math.sin(frameCount * 0.005) * 0.15;
 
-        // 4. Sincronización de Audio
+        // 4. Sincronización de Audio con Eventos de Fractura Tectónica
         if (this.audio && record.datetime) {
           this.audio.update(
             stress,
             record.temperature_180m,
             record.wind_speed_180m,
+            this.simulation.snapTriggered, // Se añade bandera de salto
+            this.simulation.lastSnapFrame ? 0.25 : 0.0, // Magnitud de impacto
           );
         }
       }
