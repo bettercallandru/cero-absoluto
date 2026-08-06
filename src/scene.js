@@ -3,7 +3,7 @@ import * as THREE from "three";
 
 import { AvatarEngine } from "./avatar.js";
 import { EnvironmentManager } from "./environment.js";
-import { ArtConfig } from "./ArtDirection.js"; // NUEVO: Importamos la Dirección de Arte
+import { ArtConfig } from "./ArtDirection.js";
 
 export class SceneManager {
   constructor(simulation, audio) {
@@ -25,7 +25,7 @@ export class SceneManager {
   initThree() {
     this.scene = new THREE.Scene();
 
-    // El fondo ahora es dictado por la Dirección de Arte
+    // Fondo de pergamino desde Dirección de Arte
     this.scene.background = new THREE.Color(ArtConfig.proyeccion.fondo);
 
     this.camera = new THREE.PerspectiveCamera(
@@ -34,7 +34,6 @@ export class SceneManager {
       0.1,
       1000,
     );
-    // Distancia de cámara dictada por la Dirección de Arte
     this.camera.position.set(0, 0, ArtConfig.proyeccion.distanciaCamara);
 
     this.renderer = new THREE.WebGLRenderer({
@@ -48,40 +47,53 @@ export class SceneManager {
   }
 
   addLights() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    // Luz ambiental suave para no quemar el pergamino ni el grafito
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
-    // Luz temporal del avatar (Se revisará en el Sprint 2)
-    this.heartLight = new THREE.PointLight(0x00e5ff, 2.5, 250);
+    // Luz focalizada sobre la escultura de grafito
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 100, 100);
+    this.scene.add(directionalLight);
+
+    // Luz interna emitida por el corazón
+    this.heartLight = new THREE.PointLight(
+      ArtConfig.avatar.corazon.colorBase,
+      ArtConfig.avatar.corazon.intensidadLuz,
+      150,
+    );
     this.scene.add(this.heartLight);
   }
 
   initAvatarRenderer() {
-    // Se conserva intacto para el Sprint 1. Será refactorizado en el Sprint 2.
     this.avatarGroup = new THREE.Group();
     this.scene.add(this.avatarGroup);
 
-    const heartGeo = new THREE.SphereGeometry(1, 32, 32);
+    // 1. Núcleo/Corazón: Geometría facetada mate/mineral
+    const heartGeo = new THREE.IcosahedronGeometry(1, 1);
     const heartMat = new THREE.MeshStandardMaterial({
-      color: 0x00e5ff,
-      emissive: 0x00e5ff,
-      emissiveIntensity: 1.2,
-      roughness: 0.1,
+      color: ArtConfig.avatar.corazon.colorBase,
+      emissive: ArtConfig.avatar.corazon.colorBase,
+      emissiveIntensity: 0.5,
+      roughness: 0.7,
+      metalness: 0.3,
     });
     this.heartMesh = new THREE.Mesh(heartGeo, heartMat);
     this.avatarGroup.add(this.heartMesh);
 
+    // 2. Grupo para las aristas de grafito
     this.strandsGroup = new THREE.Group();
     this.avatarGroup.add(this.strandsGroup);
 
+    // 3. Esquirlas / Polvo de carbón
     this.cloudGeometry = new THREE.BufferGeometry();
     this.cloudMaterial = new THREE.PointsMaterial({
-      size: 2.8,
-      color: 0x00e5ff,
+      size: 4.0,
+      color: ArtConfig.avatar.material.colorReposo,
       transparent: true,
       opacity: 0.85,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+      blending: THREE.NormalBlending,
+      depthWrite: true,
     });
     this.bodyCloudMesh = new THREE.Points(
       this.cloudGeometry,
@@ -91,39 +103,42 @@ export class SceneManager {
   }
 
   initEnvironmentManager() {
-    // Instanciación del nuevo paisaje puntillista
     this.environment = new EnvironmentManager(this.scene);
   }
 
   updateAvatar(stress, frameCount) {
-    // Lógica temporal conservada para el Sprint 1
     const data = this.avatarEngine.updateFrameData(stress, frameCount);
 
+    // Actualizar posición e intensidad del corazón
     this.heartMesh.position.set(
       data.heart.position.x,
       data.heart.position.y,
       data.heart.position.z,
     );
-    this.heartMesh.scale.setScalar(data.heart.radius * 0.5);
+    this.heartMesh.scale.setScalar(data.heart.radius * 0.4);
+    this.heartMesh.material.emissiveIntensity = data.heart.intensidad;
 
-    const color = new THREE.Color(data.color.r, data.color.g, data.color.b);
-    this.heartMesh.material.color = color;
-    this.heartMesh.material.emissive = color;
-    this.heartMesh.material.emissiveIntensity = data.heart.intensity * 1.5;
-
-    this.heartLight.color = color;
     this.heartLight.position.copy(this.heartMesh.position);
+    this.heartLight.intensity = data.heart.intensidad * 1.5;
 
+    // Interpolación cromática de grafito (de Reposo a Estrés)
+    const colorReposo = new THREE.Color(ArtConfig.avatar.material.colorReposo);
+    const colorEstres = new THREE.Color(ArtConfig.avatar.material.colorEstres);
+    const currentColor = colorReposo.lerp(colorEstres, data.stressFactor);
+
+    // Limpiar aristas previas
     while (this.strandsGroup.children.length > 0) {
       const child = this.strandsGroup.children.pop();
       if (child.geometry) child.geometry.dispose();
       if (child.material) child.material.dispose();
     }
 
+    // Dibujar aristas con trazo de grafito
     const lineMaterial = new THREE.LineBasicMaterial({
-      color: color,
+      color: currentColor,
       transparent: true,
-      opacity: 0.65,
+      opacity: ArtConfig.avatar.material.opacidadBase,
+      linewidth: ArtConfig.avatar.material.grosorAristas,
     });
 
     for (let strandPoints of data.strands) {
@@ -133,6 +148,7 @@ export class SceneManager {
       this.strandsGroup.add(line);
     }
 
+    // Actualizar polvo de carbón / esquirlas desprendidas
     const cloudPositions = new Float32Array(data.cloud.length * 3);
     for (let i = 0; i < data.cloud.length; i++) {
       cloudPositions[i * 3] = data.cloud[i].x;
@@ -145,7 +161,7 @@ export class SceneManager {
       new THREE.BufferAttribute(cloudPositions, 3),
     );
     this.cloudGeometry.attributes.position.needsUpdate = true;
-    this.cloudMaterial.color = color;
+    this.cloudMaterial.color = currentColor;
   }
 
   addEvents() {
@@ -157,7 +173,6 @@ export class SceneManager {
       this.camera.updateProjectionMatrix();
 
       this.renderer.setSize(this.width, this.height);
-      // Eliminada la referencia al composer en el resize
     });
 
     window.addEventListener("click", () => {
@@ -179,7 +194,7 @@ export class SceneManager {
         const stress = this.simulation.currentStress;
         const record = this.simulation.getCurrentRecord();
 
-        // 1. Actualizar Entorno Atmosférico y Paisaje
+        // 1. Actualizar Paisaje Puntillista
         if (this.environment) {
           this.environment.update(
             record,
@@ -189,11 +204,11 @@ export class SceneManager {
           );
         }
 
-        // 2. Actualizar Entidades 3D (Avatar temporal)
+        // 2. Actualizar Avatar de Grafito
         this.updateAvatar(stress, frameCount);
         this.avatarGroup.rotation.y = Math.sin(frameCount * 0.005) * 0.15;
 
-        // 3. Sincronización de Audio
+        // 3. Sincronización con Audio
         if (this.audio && record.datetime) {
           this.audio.update(
             stress,
@@ -205,7 +220,7 @@ export class SceneManager {
         }
       }
 
-      // 4. Renderizado directo de WebGL (Sin filtros de postprocesamiento)
+      // Renderizado directo a WebGL
       this.renderer.render(this.scene, this.camera);
     };
 

@@ -46,4 +46,24 @@ export const ArtConfig = {
       },
     ],
   },
+
+  // 3. Configuración del Avatar
+  avatar: {
+    material: {
+      // Colores base obtenidos de la paleta
+      colorReposo: Palette.avatar.grafitoReposo,
+      colorEstres: Palette.avatar.grafitoEstres,
+      opacidadBase: 0.85,
+      grosorAristas: 2.0, // Para dar peso a la silueta
+    },
+    corazon: {
+      colorBase: Palette.avatar.corazonLatente,
+      intensidadLuz: 2.5,
+      radioBase: 6.5,
+    },
+    fisicas: {
+      umbralFractura: 0.35, // Punto de estrés donde comienzan a desprenderse esquirlas
+      multiplicadorTension: 16.0,
+    },
+  },
 };
