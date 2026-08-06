@@ -1,12 +1,9 @@
+// src/scene.js
 import * as THREE from "three";
-// Modulos de Postprocesamiento de Three.js
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import { AvatarEngine } from "./avatar.js";
-import { ParticleSystem3D } from "./particles.js";
 import { EnvironmentManager } from "./environment.js";
+import { ArtConfig } from "./ArtDirection.js"; // NUEVO: Importamos la Dirección de Arte
 
 export class SceneManager {
   constructor(simulation, audio) {
@@ -19,17 +16,17 @@ export class SceneManager {
     this.height = window.innerHeight;
 
     this.initThree();
-    this.initPostProcessing();
     this.addLights();
     this.initAvatarRenderer();
-    this.initParticleSystem(); // CONSERVADO: ParticleSystem3D
-    this.initEnvironmentManager(); // NUEVO: Inicialización del paisaje
+    this.initEnvironmentManager();
     this.addEvents();
   }
 
   initThree() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x06070a); // Fondo oscuro profundo
+
+    // El fondo ahora es dictado por la Dirección de Arte
+    this.scene.background = new THREE.Color(ArtConfig.proyeccion.fondo);
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -37,7 +34,8 @@ export class SceneManager {
       0.1,
       1000,
     );
-    this.camera.position.set(0, 0, 280);
+    // Distancia de cámara dictada por la Dirección de Arte
+    this.camera.position.set(0, 0, ArtConfig.proyeccion.distanciaCamara);
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -49,34 +47,20 @@ export class SceneManager {
     this.container.appendChild(this.renderer.domElement);
   }
 
-  initPostProcessing() {
-    const renderPass = new RenderPass(this.scene, this.camera);
-
-    this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(this.width, this.height),
-      1.2,
-      0.4,
-      0.15,
-    );
-
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(renderPass);
-    this.composer.addPass(this.bloomPass);
-  }
-
   addLights() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     this.scene.add(ambientLight);
 
+    // Luz temporal del avatar (Se revisará en el Sprint 2)
     this.heartLight = new THREE.PointLight(0x00e5ff, 2.5, 250);
     this.scene.add(this.heartLight);
   }
 
   initAvatarRenderer() {
+    // Se conserva intacto para el Sprint 1. Será refactorizado en el Sprint 2.
     this.avatarGroup = new THREE.Group();
     this.scene.add(this.avatarGroup);
 
-    // 1. Corazón Emisivo
     const heartGeo = new THREE.SphereGeometry(1, 32, 32);
     const heartMat = new THREE.MeshStandardMaterial({
       color: 0x00e5ff,
@@ -87,11 +71,9 @@ export class SceneManager {
     this.heartMesh = new THREE.Mesh(heartGeo, heartMat);
     this.avatarGroup.add(this.heartMesh);
 
-    // 2. Grupo de Filamentos Musculares
     this.strandsGroup = new THREE.Group();
     this.avatarGroup.add(this.strandsGroup);
 
-    // 3. Nube Volumétrica Celular del Avatar
     this.cloudGeometry = new THREE.BufferGeometry();
     this.cloudMaterial = new THREE.PointsMaterial({
       size: 2.8,
@@ -108,18 +90,13 @@ export class SceneManager {
     this.avatarGroup.add(this.bodyCloudMesh);
   }
 
-  // CONSERVADO: ParticleSystem3D
-  initParticleSystem() {
-    this.particleSystem = new ParticleSystem3D(700);
-    this.scene.add(this.particleSystem.mesh);
-  }
-
-  // NUEVO: Instanciación limpia de EnvironmentManager
   initEnvironmentManager() {
+    // Instanciación del nuevo paisaje puntillista
     this.environment = new EnvironmentManager(this.scene);
   }
 
   updateAvatar(stress, frameCount) {
+    // Lógica temporal conservada para el Sprint 1
     const data = this.avatarEngine.updateFrameData(stress, frameCount);
 
     this.heartMesh.position.set(
@@ -180,7 +157,7 @@ export class SceneManager {
       this.camera.updateProjectionMatrix();
 
       this.renderer.setSize(this.width, this.height);
-      this.composer.setSize(this.width, this.height);
+      // Eliminada la referencia al composer en el resize
     });
 
     window.addEventListener("click", () => {
@@ -202,15 +179,7 @@ export class SceneManager {
         const stress = this.simulation.currentStress;
         const record = this.simulation.getCurrentRecord();
 
-        // 1. Modulación dinámica del Bloom
-        this.bloomPass.strength = 1.0 + stress * 1.8;
-        this.bloomPass.radius = 0.3 + stress * 0.6;
-
-        // 2. Actualizar Entidades 3D CONSERVADAS
-        this.updateAvatar(stress, frameCount);
-        this.particleSystem.update(record, stress, frameCount); // ParticleSystem3D activo
-
-        // 3. Actualizar NUEVO Entorno Atmosférico y Paisaje
+        // 1. Actualizar Entorno Atmosférico y Paisaje
         if (this.environment) {
           this.environment.update(
             record,
@@ -220,10 +189,11 @@ export class SceneManager {
           );
         }
 
-        // 4. Oscilación de la cámara / avatar CONSERVADA
+        // 2. Actualizar Entidades 3D (Avatar temporal)
+        this.updateAvatar(stress, frameCount);
         this.avatarGroup.rotation.y = Math.sin(frameCount * 0.005) * 0.15;
 
-        // 5. Sincronización de Audio CONSERVADA INTACTA
+        // 3. Sincronización de Audio
         if (this.audio && record.datetime) {
           this.audio.update(
             stress,
@@ -235,7 +205,8 @@ export class SceneManager {
         }
       }
 
-      this.composer.render();
+      // 4. Renderizado directo de WebGL (Sin filtros de postprocesamiento)
+      this.renderer.render(this.scene, this.camera);
     };
 
     animate();
