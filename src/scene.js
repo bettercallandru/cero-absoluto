@@ -6,6 +6,7 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 
 import { AvatarEngine } from "./avatar.js";
 import { ParticleSystem3D } from "./particles.js";
+import { EnvironmentManager } from "./environment.js";
 
 export class SceneManager {
   constructor(simulation, audio) {
@@ -21,7 +22,8 @@ export class SceneManager {
     this.initPostProcessing();
     this.addLights();
     this.initAvatarRenderer();
-    this.initParticleSystem();
+    this.initParticleSystem(); // CONSERVADO: ParticleSystem3D
+    this.initEnvironmentManager(); // NUEVO: Inicialización del paisaje
     this.addEvents();
   }
 
@@ -48,19 +50,15 @@ export class SceneManager {
   }
 
   initPostProcessing() {
-    // 1. Pase de Renderizado Principal
     const renderPass = new RenderPass(this.scene, this.camera);
 
-    // 2. Pase de Bloom (Resplandor volumétrico)
-    // Parámetros: (resolución, intensidad, radio, umbral)
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(this.width, this.height),
-      1.2, // Intensidad inicial
-      0.4, // Radio de dispersión
-      0.15, // Umbral (elementos con brillo mayor a 0.15 resplandecen)
+      1.2,
+      0.4,
+      0.15,
     );
 
-    // 3. Compositor de Efectos
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(renderPass);
     this.composer.addPass(this.bloomPass);
@@ -74,7 +72,6 @@ export class SceneManager {
     this.scene.add(this.heartLight);
   }
 
-  // --- DENTRO DE initAvatarRenderer() EN scene.js ---
   initAvatarRenderer() {
     this.avatarGroup = new THREE.Group();
     this.scene.add(this.avatarGroup);
@@ -94,7 +91,7 @@ export class SceneManager {
     this.strandsGroup = new THREE.Group();
     this.avatarGroup.add(this.strandsGroup);
 
-    // 3. Nube Volumétrica Celular del Avatar (NUEVO FASE 2)
+    // 3. Nube Volumétrica Celular del Avatar
     this.cloudGeometry = new THREE.BufferGeometry();
     this.cloudMaterial = new THREE.PointsMaterial({
       size: 2.8,
@@ -111,16 +108,20 @@ export class SceneManager {
     this.avatarGroup.add(this.bodyCloudMesh);
   }
 
+  // CONSERVADO: ParticleSystem3D
   initParticleSystem() {
     this.particleSystem = new ParticleSystem3D(700);
     this.scene.add(this.particleSystem.mesh);
   }
 
-  // --- DENTRO DE updateAvatar(stress, frameCount) EN scene.js ---
+  // NUEVO: Instanciación limpia de EnvironmentManager
+  initEnvironmentManager() {
+    this.environment = new EnvironmentManager(this.scene);
+  }
+
   updateAvatar(stress, frameCount) {
     const data = this.avatarEngine.updateFrameData(stress, frameCount);
 
-    // A. Actualizar Corazón
     this.heartMesh.position.set(
       data.heart.position.x,
       data.heart.position.y,
@@ -136,7 +137,6 @@ export class SceneManager {
     this.heartLight.color = color;
     this.heartLight.position.copy(this.heartMesh.position);
 
-    // B. Actualizar Filamentos Musculares
     while (this.strandsGroup.children.length > 0) {
       const child = this.strandsGroup.children.pop();
       if (child.geometry) child.geometry.dispose();
@@ -156,7 +156,6 @@ export class SceneManager {
       this.strandsGroup.add(line);
     }
 
-    // C. Actualizar Nube Volumétrica Celular (NUEVO FASE 2)
     const cloudPositions = new Float32Array(data.cloud.length * 3);
     for (let i = 0; i < data.cloud.length; i++) {
       cloudPositions[i * 3] = data.cloud[i].x;
@@ -203,31 +202,39 @@ export class SceneManager {
         const stress = this.simulation.currentStress;
         const record = this.simulation.getCurrentRecord();
 
-        // 1. Modulación dinámica del Bloom según el estrés
-        // A mayor estrés, la radiación visual y la dispersión aumentan
+        // 1. Modulación dinámica del Bloom
         this.bloomPass.strength = 1.0 + stress * 1.8;
         this.bloomPass.radius = 0.3 + stress * 0.6;
 
-        // 2. Actualizar Entidades 3D
+        // 2. Actualizar Entidades 3D CONSERVADAS
         this.updateAvatar(stress, frameCount);
-        this.particleSystem.update(record, stress, frameCount);
+        this.particleSystem.update(record, stress, frameCount); // ParticleSystem3D activo
 
-        // 3. Oscilación de la cámara / avatar
+        // 3. Actualizar NUEVO Entorno Atmosférico y Paisaje
+        if (this.environment) {
+          this.environment.update(
+            record,
+            stress,
+            frameCount,
+            this.simulation.snapTriggered,
+          );
+        }
+
+        // 4. Oscilación de la cámara / avatar CONSERVADA
         this.avatarGroup.rotation.y = Math.sin(frameCount * 0.005) * 0.15;
 
-        // 4. Sincronización de Audio con Eventos de Fractura Tectónica
+        // 5. Sincronización de Audio CONSERVADA INTACTA
         if (this.audio && record.datetime) {
           this.audio.update(
             stress,
             record.temperature_180m,
             record.wind_speed_180m,
-            this.simulation.snapTriggered, // Se añade bandera de salto
-            this.simulation.lastSnapFrame ? 0.25 : 0.0, // Magnitud de impacto
+            this.simulation.snapTriggered,
+            this.simulation.lastSnapFrame ? 0.25 : 0.0,
           );
         }
       }
 
-      // Renderizado a través del Compositor en lugar de renderer.render direct
       this.composer.render();
     };
 
