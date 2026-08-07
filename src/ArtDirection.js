@@ -1,13 +1,14 @@
 // src/ArtDirection.js
 import * as THREE from "three";
 import { Palette } from "./ColorPalette.js";
+import { ColorPalette } from "./ColorPalette.js";
 
 export const ArtConfig = {
   // 1. Configuración de Cámara y Lienzo
   proyeccion: {
     anchoEstimadoMetros: 4.0,
     distanciaCamara: 280,
-    fondo: Palette.soporte.pergaminoBase,
+    fondo: ColorPalette.soporte.pergaminoViejo,
   },
 
   // 2. Jerarquía Escalar del Paisaje Puntillista
@@ -16,7 +17,7 @@ export const ArtConfig = {
     capasPuntillismo: [
       {
         id: "bruma",
-        color: Palette.pigmentos.cenizaBruma,
+        color: ColorPalette.estratoAtmosferico.cenizaFria,
         cantidad: 1200,
         escalaBasePx: 8.0, // Puntos pequeños
         opacidad: 0.6,
@@ -26,7 +27,7 @@ export const ArtConfig = {
       },
       {
         id: "cerros",
-        color: Palette.pigmentos.musgoCerros,
+        color: ColorPalette.masaTectonica.verdeMusgoOscuro,
         cantidad: 1800,
         escalaBasePx: 25.0, // Discos medianos (Construyen masa)
         opacidad: 0.85,
@@ -36,7 +37,7 @@ export const ArtConfig = {
       },
       {
         id: "urbano",
-        color: Palette.pigmentos.terracotaUrbano,
+        color: ColorPalette.tejidoUrbano.terracotaBogotano,
         cantidad: 800,
         escalaBasePx: 50.0, // Discos grandes y expresivos
         opacidad: 0.75,
@@ -119,9 +120,9 @@ export const ArtDirection = {
     xMax: 70,
     zMin: -55,
     zMax: -10,
-    hMax: 82,          // Altura máxima que sobrepasa al avatar
-    xCenter: 25,        // Pico desplazado a la derecha
-    width: 42,          // Ancho de campana gaussiana
+    hMax: 82, // Altura máxima que sobrepasa al avatar
+    xCenter: 25, // Pico desplazado a la derecha
+    width: 42, // Ancho de campana gaussiana
     noiseFrequency: 0.08,
     noiseAmplitude: 14,
 
@@ -131,7 +132,9 @@ export const ArtDirection = {
      */
     getHillHeight(x) {
       const gaussian = Math.exp(-Math.pow((x - this.xCenter) / this.width, 2));
-      const noise = Math.sin(x * this.noiseFrequency) * Math.cos(x * this.noiseFrequency * 0.5);
+      const noise =
+        Math.sin(x * this.noiseFrequency) *
+        Math.cos(x * this.noiseFrequency * 0.5);
       return this.hMax * gaussian + noise * this.noiseAmplitude - 30;
     },
   },
