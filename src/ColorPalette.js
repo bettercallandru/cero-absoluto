@@ -13,10 +13,10 @@ export const ColorPalette = {
 
   // --- CAPA 1: BASE REFRACTARIA (Asfalto, Lluvia y Reflejos) ---
   baseRefractaria: {
-    asfaltoHumedo: "#2B2D2F",      // Existente
-    ladrilloMojado: "#8C3B2B",     // Existente
-    ocreRefractario: "#C88A3B",    // Existente
-    aguaLluvia: "#4A5568",         // Existente
+    asfaltoHumedo: "#2B2D2F", // Existente
+    ladrilloMojado: "#8C3B2B", // Existente
+    ocreRefractario: "#C88A3B", // Existente
+    aguaLluvia: "#4A5568", // Existente
     // Nuevas variantes para gradiente y vibración:
     asfaltoProfundo: "#1F2122",
     grafitoSombra: "#3A3D40",
@@ -28,25 +28,41 @@ export const ColorPalette = {
 
   // --- CAPA 2: TEJIDO URBANO (Cúmulos de Pigmento Orgánico) ---
   tejidoUrbano: {
-    terracotaBogotano: "#B84A2A",  // Existente (Usado en scene.js)
-    amarilloMostaza: "#DA9F38",    // Existente
-    musgoDorado: "#8A8A3B",        // Existente
-    carminSombra: "#6B2332",       // Existente (Usado en scene.js)
-    // Nuevas variantes para puntillismo metabólico:
-    ladrilloQuemado: "#9E381E",
-    terracotaLuz: "#D15B38",
-    ocreCalido: "#E8B34F",
-    olivaUrbano: "#A3A34B",
-    carminProfundo: "#852E41",
-    barroAmarillo: "#C47B2B",
+    // Estrato 1: Base Terrenal / Sombras Profundas (Y Bajo)
+    granateProfundo: "#3B0A0A",
+    carminOscuro: "#5A1313",
+    ladrilloDenso: "#7A1C1C",
+    terracotaBasal: "#8C271E",
+    arcillaCalida: "#A33327",
+
+    // Estrato 2: Valles Bajos / Transición Cálida (Y Medio-Bajo)
+    oxidoVibrante: "#B84029",
+    naranjaTerracota: "#CD532B",
+    ocreAnaranjado: "#D96832",
+    sienaTostado: "#E07E3C",
+    mostazaCalido: "#E89647",
+
+    // Estrato 3: Valles Medios / Transición Vegetal (Y Medio-Alto)
+    ocreSeco: "#D19E4A",
+    mostazaAceituna: "#BBA04F",
+    olivaSecoClaro: "#9FA053",
+    musgoCalido: "#859B52",
+    verdePradoSuave: "#6D9350",
+
+    // Estrato 4: Crestas Distantes / Encuentro Tectónico (Y Alto)
+    verdeHoja: "#57884D",
+    pinoMedio: "#467B48",
+    bosqueFrio: "#386D43",
+    olivaOscuro: "#2F5E3D",
+    sombraVegetal: "#264F34",
   },
 
   // --- CAPA 3: MASA TECTÓNICA (Los Cerros Orientales) ---
   masaTectonica: {
-    grafitoPuro: "#1A1D1A",        // Existente (Usado en scene.js)
-    verdeMusgoOscuro: "#2D3A2E",   // Existente
-    verdeAbeto: "#1E2820",         // Existente (Usado en scene.js)
-    tierraSombra: "#3B322B",       // Existente
+    grafitoPuro: "#1A1D1A", // Existente (Usado en scene.js)
+    verdeMusgoOscuro: "#2D3A2E", // Existente
+    verdeAbeto: "#1E2820", // Existente (Usado en scene.js)
+    tierraSombra: "#3B322B", // Existente
     // Nuevas variantes para la silueta del cerro:
     carbonDenso: "#121412",
     pizarraOscura: "#242924",
@@ -58,10 +74,10 @@ export const ColorPalette = {
 
   // --- CAPA 4: ESTRATO ATMOSFÉRICO (Bruma / Niebla / Clima Frío) ---
   estratoAtmosferico: {
-    cenizaFria: "#A0AEC0",         // Existente
-    azulGrisaceo: "#718096",       // Existente
-    nieblaCinc: "#CBD5E0",         // Existente
-    blancoTiza: "#EDF2F7",         // Existente
+    cenizaFria: "#A0AEC0", // Existente
+    azulGrisaceo: "#718096", // Existente
+    nieblaCinc: "#CBD5E0", // Existente
+    blancoTiza: "#EDF2F7", // Existente
     // Nuevas variantes para dispersión gaseosa:
     brumaProfunda: "#8C9BAE",
     vaporCielo: "#B0BDCE",
@@ -70,8 +86,8 @@ export const ColorPalette = {
   },
 
   /**
-   * Extrae todas las variantes de un grupo como un arreglo de THREE.Color
-   * @param {string} category 
+   * Helper para convertir un grupo cromático a un array de THREE.Color
+   * @param {string} category
    * @returns {THREE.Color[]}
    */
   getThreeColors(category) {
@@ -103,4 +119,3 @@ export const Palette = {
     corazonLatente: 0x5c6370,
   },
 };
-

@@ -87,14 +87,13 @@ export const ArtDirection = {
 
   // --- CAPA 1: PARÁMETROS BASE REFRACTARIA (Drenaje Vertical) ---
   baseRefractaria: {
-    count: 1200,
-    yMin: -120,
-    yMax: -75,
-    xWidth: 160,
-    zDepth: 80,
-    scaleYStretch: 3.8, // Elongación de partículas imitando escurrimientos
-    opacityFalloffExponent: 1.8,
+    count: 4200,
+    xWidth: 140,
+    zDepth: 60,
+    yMin: -35, // Bajar un poco más para cubrir el borde inferior
+    yMax: -18, // Subir para que los trazos se integren con la base de los cerros
     dripSpeed: 0.12,
+    scaleYStretch: 2.5,
   },
 
   // --- CAPA 2: PARÁMETROS TEJIDO URBANO (Cúmulos Metabólicos) ---

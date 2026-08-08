@@ -6,7 +6,8 @@
 import * as THREE from "three";
 
 import { AvatarEngine } from "./avatar.js";
-import { EnvironmentManager } from "./environment.js";
+/* import { EnvironmentManager } from "./environment"; */
+import { EnvironmentManager } from "./environment/EnvironmentManager.js";
 import { ArtDirection } from "./ArtDirection.js";
 import { ColorPalette } from "./ColorPalette.js";
 
@@ -31,7 +32,9 @@ export class SceneManager {
     this.scene = new THREE.Scene();
 
     // Fondo pergamino cálido desde ColorPalette
-    this.scene.background = new THREE.Color(ColorPalette.soporte.pergaminoViejo);
+    this.scene.background = new THREE.Color(
+      ColorPalette.soporte.pergaminoViejo,
+    );
 
     // Configuración de cámara inclinada en perspectiva (-35°)
     const { fov, near, far, position, target } = ArtDirection.camera;
@@ -41,7 +44,7 @@ export class SceneManager {
       near,
       far,
     );
-    
+
     this.camera.position.set(position.x, position.y, position.z);
     this.camera.lookAt(target.x, target.y, target.z);
 
@@ -134,7 +137,9 @@ export class SceneManager {
 
     // Interpolación cromática de grafito (de Reposo a Estrés)
     const colorReposo = new THREE.Color(ColorPalette.masaTectonica.verdeAbeto);
-    const colorEstres = new THREE.Color(ColorPalette.tejidoUrbano.terracotaBogotano);
+    const colorEstres = new THREE.Color(
+      ColorPalette.tejidoUrbano.terracotaBogotano,
+    );
     const currentColor = colorReposo.lerp(colorEstres, data.stressFactor);
 
     // Limpiar aristas previas
