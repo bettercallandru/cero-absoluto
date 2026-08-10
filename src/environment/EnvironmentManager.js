@@ -14,18 +14,19 @@ export class EnvironmentManager {
     /* this.baseRefractaria = new BaseRefractaria(scene); */
     this.tejidoUrbano = new TejidoUrbano(scene);
     this.masaTectonica = new MasaTectonica(scene);
-    /* this.estratoAtmosferico = new EstratoAtmosferico(scene); */
+    this.estratoAtmosferico = new EstratoAtmosferico(scene);
   }
 
   /**
    * Ciclo de actualización unificado
    */
   update(record, stress, frameCount, isSnap = false) {
-    const windSpeed = record ? record.wind_speed_180m : 10.0;
+    const windSpeed = record ? record.wind_speed_180m : 12.0;
+    const relativeHumidity = record ? record.relative_humidity_2m : 0.65;
 
     /* this.baseRefractaria.update(stress, frameCount); */
     this.tejidoUrbano.update(stress, frameCount);
     this.masaTectonica.update(stress, frameCount, isSnap);
-    /* this.estratoAtmosferico.update(windSpeed, frameCount); */
+    this.estratoAtmosferico.update(windSpeed, relativeHumidity, frameCount);
   }
 }

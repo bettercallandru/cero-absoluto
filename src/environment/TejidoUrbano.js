@@ -1,7 +1,8 @@
 /**
- * CAPA 2: TEJIDO URBANO (Espuelas Diagonales en Espejo & Gradiente Porcentual)
- * Construye 5 capas en forma de triángulos rectángulos alternados (zig-zag).
- * Render en orden posterior-a-frontal (k=4 a k=0) para jerarquía Z real en Three.js.
+ * CAPA 2: TEJIDO URBANO (Revisión Final de Textura y Dinamismo)
+ * - Hipotenusa diagonal limpia sin olas/crespas antinaturales.
+ * - Deshilachado rico en toda la ladera superior (Hipotenusa).
+ * - Alta variación de escalas (Micro-puntos de grano / Macro de volumen).
  */
 import * as THREE from "three";
 import { ArtDirection } from "../ArtDirection.js";
@@ -12,156 +13,181 @@ export class TejidoUrbano {
     this.scene = scene;
     this.config = ArtDirection.tejidoUrbano;
 
-    // Carga los 20 colores tipeados desde ColorPalette
     this.colors = ColorPalette.getThreeColors("tejidoUrbano");
 
-    this.particleCount = 7500;
     this.dummy = new THREE.Object3D();
-
-    this.baseScales = new Float32Array(this.particleCount);
-    this.phases = new Float32Array(this.particleCount);
-
     this.init();
   }
 
   /**
-   * Calcula la altura de la cumbre en diagonal con mayor inclinación descendente
+   * Hipotenusa diagonal pura con micro-rugosidad (sin olas ni crestas marcadas)
    */
   getDiagonalRidgeY(x, layerIndex, baseY) {
-    // Alternancia de pendiente: par sube a la derecha (+1), impar sube a la izquierda (-1)
     const direction = layerIndex % 2 === 0 ? 1 : -1;
 
-    // 1. Inclinación del cateto opuesto
-    const slope = 0.6;
+    // 1. Inclinación diagonal suave de la ladera
+    const slope = 0.52;
     const linearSlope = direction * (slope * x);
 
-    // 2. INCLINACIÓN MÁS PRONUNCIADA HACIA LA CAPA INFERIOR
-    const normalizedX = x / 43;
-    const peakProximity = Math.max(0, direction * normalizedX);
+    // 2. Micro-rugosidad de grano (evitamos senos de baja frecuencia que crean "olas")
+    const microRuggedness =
+      Math.sin(x * 0.45 + layerIndex) * 1.1 + Math.cos(x * 0.9) * 0.6;
 
-    // Aumentamos de -4.5 a -8.5 para inclinar con más fuerza y sellar vacíos
-    const leanTilt = Math.pow(peakProximity, 1.4) * -4.5;
+    // 3. Leve atenuación suave al acercarse a los extremos
+    const edgeDrop = Math.pow(Math.abs(x) / 46, 2.0) * -1.8;
 
-    // 3. Micro-ondulación orgánica
-    const wave =
-      Math.sin(x * 0.048 + layerIndex * 1.5) * 3.8 +
-      Math.cos(x * 0.1 - layerIndex) * 1.8;
-
-    return baseY + linearSlope + leanTilt + wave;
+    return baseY + linearSlope + microRuggedness + edgeDrop;
   }
 
-  /**
-   * Mapea el índice cromático según la matriz de porcentajes de la capa k
-   */
-  getLayerColorIndex(layerIndex, tLocal) {
-    // Rangos de la paleta [minIdx, maxIdx] asignados a cada capa según la matriz:
-    // Capa 0: [0, 6]   -> 80% Rojo / 20% Ocre
-    // Capa 1: [0, 11]  -> 50% Rojo / 40% Ocre / 10% Verde
-    // Capa 2: [3, 14]  -> 20% Rojo / 50% Ocre / 30% Verde
-    // Capa 3: [7, 18]  -> 5%  Rojo / 35% Ocre / 60% Verde
-    // Capa 4: [12, 19] -> 0%  Rojo / 15% Ocre / 85% Verde
+  getLayerColorIndex(layerIndex, tLocal, x, y) {
     const layerRanges = [
-      [0, 6], // Capa 0 (Base terrenal)
+      [0, 6], // Capa 0
       [0, 11], // Capa 1
-      [3, 14], // Capa 2 (Centro)
+      [3, 14], // Capa 2
       [7, 18], // Capa 3
-      [12, 19], // Capa 4 (Cúspide / Encuentro Tectónico)
+      [12, 19], // Capa 4
     ];
 
     const [minIdx, maxIdx] = layerRanges[layerIndex];
 
-    // Mapeo dentro del rango de la capa (tLocal: 0 = base del triángulo, 1 = cumbre)
-    let idx = Math.floor(THREE.MathUtils.lerp(minIdx, maxIdx, tLocal));
+    const noiseShift = Math.sin(x * 0.15 + y * 0.2) * 0.12;
+    const adjustedT = THREE.MathUtils.clamp(tLocal + noiseShift, 0, 1);
 
-    // Micro-variación de pigmento (±1 tono)
+    let idx = Math.floor(THREE.MathUtils.lerp(minIdx, maxIdx, adjustedT));
     idx += Math.floor((Math.random() - 0.5) * 2.2);
 
     return THREE.MathUtils.clamp(idx, 0, this.colors.length - 1);
   }
 
   init() {
-    const geometry = new THREE.CircleGeometry(1.0, 16);
+    const geometry = new THREE.CircleGeometry(1.0, 14);
     const material = new THREE.MeshBasicMaterial({
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.91,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
 
+    const TOTAL_LAYERS = 5;
+
+    // Alturas imbricadas de base
+    const baseHeights = [-32, -30, -26, -22, -18];
+
+    const basePointSize = 1.75;
+    const minPointSizeLimit = 0.7;
+    const baseCountPerLayer = 1700; // Incrementado para sostener los micro-puntos sin perder opacidad
+
+    const layerParticleCounts = new Array(TOTAL_LAYERS);
+    let totalParticles = 0;
+
+    for (let k = 0; k < TOTAL_LAYERS; k++) {
+      const layerProgress = k / (TOTAL_LAYERS - 1);
+      const calculatedScale = basePointSize * (1.0 - layerProgress * 0.35);
+      const layerScale = Math.max(minPointSizeLimit, calculatedScale);
+
+      const areaRatio = Math.pow(basePointSize / layerScale, 1.98);
+      const count = Math.round(baseCountPerLayer * areaRatio);
+
+      layerParticleCounts[k] = count;
+      totalParticles += count;
+    }
+
+    this.particleCount = totalParticles;
     this.mesh = new THREE.InstancedMesh(geometry, material, this.particleCount);
 
-    const TOTAL_LAYERS = 5;
-    const particlesPerLayer = Math.floor(this.particleCount / TOTAL_LAYERS);
-
-    // Alturas base para los 5 estratos
-    const baseHeights = [-40, -37, -27, -24, -20];
+    this.baseScales = new Float32Array(this.particleCount);
+    this.phases = new Float32Array(this.particleCount);
 
     let particleIndex = 0;
 
-    // DIBUJO BACK-TO-FRONT: desde la Capa 4 (Fondo/Arriba) hasta la Capa 0 (Frente/Abajo)
     for (let k = TOTAL_LAYERS - 1; k >= 0; k--) {
-      const layerProgress = k / (TOTAL_LAYERS - 1); // 1.0 (Fondo) -> 0.0 (Primer plano)
+      const layerProgress = k / (TOTAL_LAYERS - 1);
       const baseY = baseHeights[k];
+      const countForThisLayer = layerParticleCounts[k];
 
-      for (let i = 0; i < particlesPerLayer; i++) {
+      const layerZ = THREE.MathUtils.lerp(8, -12, layerProgress);
+      const calculatedScale = basePointSize * (1.0 - layerProgress * 0.35);
+      const currentLayerBaseScale = Math.max(
+        minPointSizeLimit,
+        calculatedScale,
+      );
+
+      for (let i = 0; i < countForThisLayer; i++) {
         if (particleIndex >= this.particleCount) break;
 
-        // 1. Posición Horizontal X (Masa central con desgranado a bordes)
         const xFactor = (Math.random() + Math.random() - 1) * 0.5;
-        const x = xFactor * 86;
+        const x = xFactor * 88;
 
-        // 2. Geometría de Triángulo Rectángulo (Ladera Diagonal)
         const ridgeY = this.getDiagonalRidgeY(x, k, baseY);
+        const triangleBaseY = baseY - (k === 0 ? 7.0 : 10.0);
+        const maxLaderaHeight = Math.max(2.0, ridgeY - triangleBaseY);
 
-        // La falda del triángulo desciende para traslaparse con la capa inferior
-        const triangleBaseY = baseY - 6.0; // Un poco más ajustado a la base
-        const maxLaderaHeight = Math.max(1.0, ridgeY - triangleBaseY);
-
-        // Concentración de partículas densas en la cuenca, dispersándose a la cumbre
-        const hFactor = Math.pow(Math.random(), 1.3);
+        // Permite que algunos puntos superen ligeramente la ridgeY para deshilachar la hipotenusa
+        const hFactor = Math.pow(Math.random(), 1.05) * 1.08;
         const y = triangleBaseY + hFactor * maxLaderaHeight;
 
-        // Coordenada Z real (K=0 al frente Z=+10, K=4 al fondo Z=-10)
-        const z =
-          THREE.MathUtils.lerp(10, -10, layerProgress) +
-          (Math.random() - 0.5) * 1.5;
-
-        // 3. Color Local por Ladera
         const tLocal = THREE.MathUtils.clamp(
           (y - triangleBaseY) / maxLaderaHeight,
           0,
           1,
         );
-        const colorIndex = this.getLayerColorIndex(k, tLocal);
 
-        // 4. Escorzo de Perspectiva Atmosférica
-        // Las capas lejanas (k=4) son hasta un 45% más pequeñas
-        const distanceScale = 1.0 - layerProgress * 0.45;
-        let size;
-        const randType = Math.random();
+        // --- DISTANCIA A LA HIPOTENUSA Y ZONA DE DESHILACHADO ---
+        const distToHypotenuse = Math.abs(y - ridgeY);
+        const isNearHypotenuse = distToHypotenuse < 5.5; // Franja amplia en la ladera superior
 
-        if (randType < 0.12) {
-          size = (2.2 + Math.random() * 1.2) * distanceScale; // Partículas base
-        } else if (randType < 0.68) {
-          size = (1.0 + Math.random() * 0.6) * distanceScale; // Cuerpo principal
+        // RANGOS HETEROGÉNEOS DE TAMAÑO (Macro / Medio / Micro)
+        const randSize = Math.random();
+        let finalSize = currentLayerBaseScale;
+        let isMicroDetail = false;
+
+        if (isNearHypotenuse && Math.random() < 0.65) {
+          // Deshilachado activo en la hipotenusa
+          isMicroDetail = true;
+          finalSize *= 0.28 + Math.random() * 0.35;
+        } else if (randSize < 0.35) {
+          // Puntos micro/grano repartidos en el cuerpo
+          isMicroDetail = true;
+          finalSize *= 0.35 + Math.random() * 0.3;
+        } else if (randSize < 0.8) {
+          // Puntos medios de estructura
+          finalSize *= 0.85 + Math.random() * 0.35;
         } else {
-          size = (0.28 + Math.random() * 0.35) * distanceScale; // Puntos finos
+          // Bloques macro de fondo
+          finalSize *= 1.2 + Math.random() * 0.4;
         }
 
-        this.baseScales[particleIndex] = size;
+        // Puntos de textura/deshilachado flotan ligeramente hacia adelante en Z
+        const z =
+          layerZ + (isMicroDetail ? 0.42 : 0.0) + (Math.random() - 0.5) * 1.0;
+
+        this.baseScales[particleIndex] = finalSize;
         this.phases[particleIndex] = Math.random() * Math.PI * 2;
 
-        // Matriz de Transformación
         this.dummy.position.set(x, y, z);
-        this.dummy.scale.set(size, size, 1.0);
-        this.dummy.rotation.set(-Math.PI * 0.08, 0, 0);
+        this.dummy.scale.set(finalSize, finalSize, 1.0);
+        this.dummy.rotation.set(-Math.PI * 0.06, 0, 0);
         this.dummy.updateMatrix();
 
         this.mesh.setMatrixAt(particleIndex, this.dummy.matrix);
 
-        // Asignación Cromática
-        const color = this.colors[colorIndex];
-        this.mesh.setColorAt(particleIndex, color);
+        // LUMINOSIDAD Y PUNTOS JOYA
+        const colorIndex = this.getLayerColorIndex(k, tLocal, x, y);
+        const baseColor = this.colors[colorIndex].clone();
+
+        const layerLuminosityBoost = 1.0 + (4 - k) * 0.07;
+        baseColor.multiplyScalar(layerLuminosityBoost);
+
+        const randJoya = Math.random();
+        if ((k === 0 || k === 1) && randJoya < 0.15) {
+          baseColor.multiplyScalar(1.45); // Punto Joya deslumbrante
+        } else if (isMicroDetail) {
+          baseColor.multiplyScalar(1.22);
+        } else if (randJoya > 0.82) {
+          baseColor.multiplyScalar(0.7);
+        }
+
+        this.mesh.setColorAt(particleIndex, baseColor);
 
         particleIndex++;
       }
@@ -182,9 +208,8 @@ export class TejidoUrbano {
         this.dummy.scale,
       );
 
-      // Respiración sutil
       const pulse =
-        Math.sin(frameCount * 0.016 + this.phases[i]) * 0.03 * (1.0 + stress);
+        Math.sin(frameCount * 0.016 + this.phases[i]) * 0.025 * (1.0 + stress);
       const currentScale = this.baseScales[i] * (1.0 + pulse);
 
       this.dummy.scale.set(currentScale, currentScale, 1.0);

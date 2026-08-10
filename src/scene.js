@@ -6,7 +6,6 @@
 import * as THREE from "three";
 
 import { AvatarEngine } from "./avatar.js";
-/* import { EnvironmentManager } from "./environment"; */
 import { EnvironmentManager } from "./environment/EnvironmentManager.js";
 import { ArtDirection } from "./ArtDirection.js";
 import { ColorPalette } from "./ColorPalette.js";
