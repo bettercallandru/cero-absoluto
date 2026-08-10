@@ -1,84 +1,234 @@
 /**
- * CAPA 3: MASA TECTÓNICA (Los Cerros Orientales de Bogotá)
- * Corregido: Perfil horizontal extendido, cadena montañosa suave y bordes desgranados.
+ * CAPA: MASA TECTÓNICA (Versión MVP Final)
+ * - Alta densidad de grano y micro-detalles (40% de micro-puntos en capa superior Z).
+ * - Volumen masivo e impenetrable con base de puntos macro.
+ * - Sin presencia de rojos en cúpulas y con puntos joya en el frente.
  */
 import * as THREE from "three";
-import { ArtDirection } from "../ArtDirection.js";
 import { ColorPalette } from "../ColorPalette.js";
 
 export class MasaTectonica {
   constructor(scene) {
     this.scene = scene;
-    this.config = ArtDirection.masaTectonica;
-    this.colors = ColorPalette.getThreeColors("masaTectonica");
+    this.colorsTectonica = ColorPalette.getThreeColors("masaTectonica");
 
-    this.particleCount = 6500;
     this.dummy = new THREE.Object3D();
-
-    this.initPositions = [];
-    this.rotations = new Float32Array(this.particleCount);
-    this.baseScales = new Float32Array(this.particleCount);
-
     this.init();
   }
 
-  /**
-   * Perfil de Cordillera Horizontal Continua (de lado a lado)
-   */
-  getHillProfile(x) {
-    // Pico principal desplazado sutilmente a la derecha + pico secundario suave a la izquierda
-    const mainRidge = Math.exp(-Math.pow((x - 15) / 50, 2)) * 48;
-    const secondaryRidge = Math.exp(-Math.pow((x + 40) / 45, 2)) * 32;
-    const undulatingGround = Math.sin(x * 0.05) * 6;
+  generateLayerClusters(config, layerIndex) {
+    const clusterCount = 26;
+    const clusters = [];
+    const colorOffset = layerIndex * 20;
 
-    // Altura base que se mantiene a lo largo de todo X
-    return mainRidge + secondaryRidge + undulatingGround - 5;
+    for (let c = 0; c < clusterCount; c++) {
+      const normX = (Math.random() - 0.5) * 1.9;
+      const x = config.peakX + normX * (config.width / 2.0);
+
+      const xAdjusted = normX - config.skew * (1.0 - Math.abs(normX));
+      const domeCurve = Math.max(0, 1.0 - Math.pow(xAdjusted, 2.0));
+      const maxMountainY = config.baseY + config.height * domeCurve;
+
+      const y = config.baseY + Math.random() * (maxMountainY - config.baseY);
+
+      let colorSubIndex = Math.floor(Math.random() * 20);
+
+      if (layerIndex === 0) {
+        const heightRatio = (y - config.baseY) / config.height;
+        if (heightRatio > 0.18) {
+          colorSubIndex = 7 + Math.floor(Math.random() * 13);
+        } else {
+          colorSubIndex = Math.floor(Math.random() * 7);
+        }
+      }
+
+      const finalIdx = colorOffset + colorSubIndex;
+
+      clusters.push({
+        x: x,
+        y: y,
+        colorIdx: THREE.MathUtils.clamp(
+          finalIdx,
+          0,
+          this.colorsTectonica.length - 1,
+        ),
+      });
+    }
+
+    return clusters;
+  }
+
+  getClusterColor(x, y, clusters, isMicroDetail, layerIndex) {
+    let minDist = Infinity;
+    let closestCluster = clusters[0];
+
+    for (let i = 0; i < clusters.length; i++) {
+      const dx = x - clusters[i].x;
+      const dy = y - clusters[i].y;
+      const dist = dx * dx * 0.75 + dy * dy * 1.25;
+
+      if (dist < minDist) {
+        minDist = dist;
+        closestCluster = clusters[i];
+      }
+    }
+
+    let finalColorIdx = closestCluster.colorIdx;
+
+    if (isMicroDetail) {
+      finalColorIdx = THREE.MathUtils.clamp(
+        finalColorIdx + 1,
+        0,
+        this.colorsTectonica.length - 1,
+      );
+    }
+
+    const baseColor = this.colorsTectonica[finalColorIdx].clone();
+
+    // Boost por profundidad y destellos
+    const layerLuminosityBoost = 1.0 + (3 - layerIndex) * 0.08;
+    baseColor.multiplyScalar(layerLuminosityBoost);
+
+    const randJoya = Math.random();
+    if ((layerIndex === 0 || layerIndex === 1) && randJoya < 0.14) {
+      baseColor.multiplyScalar(1.48); // Destello mineral
+    } else if (isMicroDetail) {
+      baseColor.multiplyScalar(1.28);
+    } else if (randJoya > 0.82) {
+      baseColor.multiplyScalar(0.65);
+    }
+
+    return baseColor;
   }
 
   init() {
-    const shape = new THREE.Shape();
-    shape.absellipse(0, 0, 0.9, 0.6, 0, Math.PI * 2, false, 0);
-
-    const geometry = new THREE.ShapeGeometry(shape, 8);
+    const geometry = new THREE.CircleGeometry(1.0, 14);
     const material = new THREE.MeshBasicMaterial({
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.94,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
 
+    const TOTAL_LAYERS = 4;
+
+    const layerConfigs = [
+      { peakX: 8, height: 46, width: 108, baseY: -38, skew: 0.18 },
+      { peakX: 16, height: 54, width: 110, baseY: -36, skew: 0.28 },
+      { peakX: 4, height: 62, width: 116, baseY: -34, skew: 0.15 },
+      { peakX: 20, height: 72, width: 124, baseY: -32, skew: 0.32 },
+    ];
+
+    const basePointSize = 1.72;
+    const minPointSizeLimit = 0.82;
+    const baseCount = 3400; // Incrementado para sostener el grano fino sin perder opacidad
+
+    const layerParticleCounts = new Array(TOTAL_LAYERS);
+    let totalParticles = 0;
+
+    for (let k = 0; k < TOTAL_LAYERS; k++) {
+      const layerProgress = k / (TOTAL_LAYERS - 1);
+      const calculatedScale = basePointSize * (1.0 - layerProgress * 0.28);
+      const layerScale = Math.max(minPointSizeLimit, calculatedScale);
+
+      const areaRatio = Math.pow(basePointSize / layerScale, 2.2);
+      const count = Math.round(baseCount * areaRatio);
+
+      layerParticleCounts[k] = count;
+      totalParticles += count;
+    }
+
+    this.particleCount = totalParticles;
     this.mesh = new THREE.InstancedMesh(geometry, material, this.particleCount);
 
-    for (let i = 0; i < this.particleCount; i++) {
-      // Extensión horizontal ancha para cruzar la pantalla (-100 a 100)
-      const x = THREE.MathUtils.lerp(-100, 100, Math.random());
-      const z = THREE.MathUtils.lerp(-60, -10, Math.random());
+    this.baseScales = new Float32Array(this.particleCount);
+    this.phases = new Float32Array(this.particleCount);
 
-      const maxY = this.getHillProfile(x);
+    let particleIndex = 0;
 
-      // Asentado desde el fondo (-50) hasta la cresta ondulada
-      const y = THREE.MathUtils.lerp(-50, maxY, Math.pow(Math.random(), 1.15));
+    for (let k = TOTAL_LAYERS - 1; k >= 0; k--) {
+      const layerProgress = k / (TOTAL_LAYERS - 1);
+      const config = layerConfigs[k];
+      const countForThisLayer = layerParticleCounts[k];
 
-      // Escala contenida para mejor definición de masa
-      const size = 0.85 + Math.random() * 1.15;
-      const rotZ = Math.random() * Math.PI;
+      const layerClusters = this.generateLayerClusters(config, k);
+      const layerZ = THREE.MathUtils.lerp(-10, -26, layerProgress);
+      const calculatedScale = basePointSize * (1.0 - layerProgress * 0.28);
+      const currentLayerBaseScale = Math.max(
+        minPointSizeLimit,
+        calculatedScale,
+      );
 
-      this.initPositions.push({ x, y, z });
-      this.rotations[i] = rotZ;
-      this.baseScales[i] = size;
+      for (let i = 0; i < countForThisLayer; i++) {
+        if (particleIndex >= this.particleCount) break;
 
-      this.dummy.position.set(x, y, z);
-      this.dummy.scale.set(size, size * (0.6 + Math.random() * 0.4), 1.0);
-      this.dummy.rotation.set(-Math.PI * 0.1, 0, rotZ);
-      this.dummy.updateMatrix();
+        const normX = (Math.random() - 0.5) * 2.0;
+        const x = config.peakX + normX * (config.width / 2.0);
 
-      this.mesh.setMatrixAt(i, this.dummy.matrix);
+        const xAdjusted = normX - config.skew * (1.0 - Math.abs(normX));
+        const domeCurve = Math.max(0, 1.0 - Math.pow(xAdjusted, 2.0));
 
-      // Color por profundidad en Z y gradiente de sombra
-      const depthRatio = (z - -60) / (-10 - -60);
-      const colorIndex =
-        Math.floor(depthRatio * this.colors.length) % this.colors.length;
-      this.mesh.setColorAt(i, this.colors[colorIndex]);
+        const primaryNoise = Math.sin(x * 0.15) * 3.5;
+        const secondaryNoise = Math.cos(x * 0.38) * 2.2;
+        const tertiaryNoise = Math.sin(x * 0.85) * 1.1;
+        const totalAccident =
+          (primaryNoise + secondaryNoise + tertiaryNoise) *
+          (k === 0 ? 1.3 : 1.0);
+
+        const maxMountainY =
+          config.baseY + (config.height + totalAccident) * domeCurve;
+
+        const hFactor = Math.pow(Math.random(), 1.02);
+        const y = config.baseY + hFactor * (maxMountainY - config.baseY);
+
+        if (y < config.baseY) continue;
+
+        const distToEdge = Math.abs(y - maxMountainY);
+        const edgeThreshold = k > 0 ? 5.8 : 4.0;
+        const isNearEdge = distToEdge < edgeThreshold;
+
+        // AUMENTO A 40% DE MICRO-DETALLE
+        const isMicroDetail = Math.random() < 0.4 || isNearEdge;
+
+        const strataWave = Math.sin(y * 0.22 + x * 0.14);
+
+        let finalSize = currentLayerBaseScale;
+
+        if (isMicroDetail) {
+          // Puntos pequeños de detalle y grano
+          const microFactor = 0.35 + Math.random() * 0.38;
+          finalSize *= microFactor;
+        } else {
+          // Bloques macizos que sostienen el volumen
+          const macroFactor = 1.12 + strataWave * 0.3 + Math.random() * 0.22;
+          finalSize *= macroFactor;
+        }
+
+        // Coloca el micro-detalle ligeramente por delante para flotar sobre las masas grandes
+        const z =
+          layerZ + (isMicroDetail ? 0.45 : 0.0) + (Math.random() - 0.5) * 1.2;
+
+        this.baseScales[particleIndex] = finalSize;
+        this.phases[particleIndex] = Math.random() * Math.PI * 2;
+
+        this.dummy.position.set(x, y, z);
+        this.dummy.scale.set(finalSize, finalSize, 1.0);
+        this.dummy.rotation.set(0, 0, 0);
+        this.dummy.updateMatrix();
+
+        this.mesh.setMatrixAt(particleIndex, this.dummy.matrix);
+
+        const color = this.getClusterColor(
+          x,
+          y,
+          layerClusters,
+          isMicroDetail,
+          k,
+        );
+        this.mesh.setColorAt(particleIndex, color);
+
+        particleIndex++;
+      }
     }
 
     this.mesh.instanceMatrix.needsUpdate = true;
@@ -87,28 +237,25 @@ export class MasaTectonica {
     this.scene.add(this.mesh);
   }
 
-  update(stress, frameCount, isSnap = false) {
-    if (isSnap || stress > 0.55) {
-      const jitter = isSnap ? 0.6 : (stress - 0.55) * 0.35;
+  update(stress, frameCount) {
+    for (let i = 0; i < this.particleCount; i++) {
+      this.mesh.getMatrixAt(i, this.dummy.matrix);
+      this.dummy.matrix.decompose(
+        this.dummy.position,
+        this.dummy.quaternion,
+        this.dummy.scale,
+      );
 
-      for (let i = 0; i < this.particleCount; i++) {
-        const origin = this.initPositions[i];
+      const pulse =
+        Math.sin(frameCount * 0.014 + this.phases[i]) * 0.02 * (1.0 + stress);
+      const currentScale = this.baseScales[i] * (1.0 + pulse);
 
-        this.mesh.getMatrixAt(i, this.dummy.matrix);
-        this.dummy.matrix.decompose(
-          this.dummy.position,
-          this.dummy.quaternion,
-          this.dummy.scale,
-        );
+      this.dummy.scale.set(currentScale, currentScale, 1.0);
+      this.dummy.updateMatrix();
 
-        this.dummy.position.x = origin.x + (Math.random() - 0.5) * jitter;
-        this.dummy.position.y = origin.y + (Math.random() - 0.5) * jitter;
-
-        this.dummy.rotation.set(-Math.PI * 0.1, 0, this.rotations[i]);
-        this.dummy.updateMatrix();
-        this.mesh.setMatrixAt(i, this.dummy.matrix);
-      }
-      this.mesh.instanceMatrix.needsUpdate = true;
+      this.mesh.setMatrixAt(i, this.dummy.matrix);
     }
+
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 }

@@ -13,8 +13,8 @@ export class EnvironmentManager {
     // Instanciación de las 4 capas independientes
     /* this.baseRefractaria = new BaseRefractaria(scene); */
     this.tejidoUrbano = new TejidoUrbano(scene);
-    /* this.masaTectonica = new MasaTectonica(scene);
-    this.estratoAtmosferico = new EstratoAtmosferico(scene); */
+    this.masaTectonica = new MasaTectonica(scene);
+    /* this.estratoAtmosferico = new EstratoAtmosferico(scene); */
   }
 
   /**
@@ -25,7 +25,7 @@ export class EnvironmentManager {
 
     /* this.baseRefractaria.update(stress, frameCount); */
     this.tejidoUrbano.update(stress, frameCount);
-    /* this.masaTectonica.update(stress, frameCount, isSnap);
-    this.estratoAtmosferico.update(windSpeed, frameCount); */
+    this.masaTectonica.update(stress, frameCount, isSnap);
+    /* this.estratoAtmosferico.update(windSpeed, frameCount); */
   }
 }
