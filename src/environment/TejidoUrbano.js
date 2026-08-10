@@ -220,4 +220,31 @@ export class TejidoUrbano {
 
     this.mesh.instanceMatrix.needsUpdate = true;
   }
+
+  /**
+   * Exporta la matriz de partículas para que la BaseRefractaria o sceneContext
+   * puedan realizar el muestreo óptico del espejo.
+   */
+  getParticlesData() {
+    const data = [];
+    const matrix = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const color = new THREE.Color();
+
+    for (let i = 0; i < this.particleCount; i++) {
+      this.mesh.getMatrixAt(i, matrix);
+      position.setFromMatrixPosition(matrix);
+      this.mesh.getColorAt(i, color);
+
+      data.push({
+        x: position.x,
+        y: position.y,
+        z: position.z,
+        color: color.clone(),
+        layer: "tejidoUrbano",
+      });
+    }
+
+    return data;
+  }
 }

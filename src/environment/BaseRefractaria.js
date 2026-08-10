@@ -1,80 +1,149 @@
 /**
- * CAPA 1: BASE REFRACTARIA (Asfalto Mojado, Drenaje y Reflejos)
- * Reescrito para puntillismo orgánico, óvalos estirados y alta densidad.
+ * CAPA 1: BASE REFRACTARIA (Charcos Puntillistas Refractarios)
+ * - Estanques/Charcos orgánicos delimitados ubicados estrictamente debajo del Tejido Urbano.
+ * - Círculos puros (escala 1:1) manteniendo la técnica puntillista de la escena.
+ * - Puntos base grandes en tonos Agua/Azul Pizarra + Puntos de detalle pequeños
+ *   superpuestos que reflejan los tonos cálidos del Tejido Urbano.
  */
 import * as THREE from "three";
 import { ArtDirection } from "../ArtDirection.js";
-import { ColorPalette } from "../ColorPalette.js";
 
 export class BaseRefractaria {
-  constructor(scene) {
+  constructor(scene, sceneContext = null) {
     this.scene = scene;
     this.config = ArtDirection.baseRefractaria;
-    this.colors = ColorPalette.getThreeColors("baseRefractaria");
+    this.sceneContext = sceneContext;
 
-    // Aumento de densidad para textura puntillista fina
-    this.particleCount = 4200;
+    this.particleCount = 1800; // Densidad enfocada en los cuerpos de agua
     this.dummy = new THREE.Object3D();
 
-    // Arrays para animación e individualidad
-    this.speeds = new Float32Array(this.particleCount);
-    this.baseY = new Float32Array(this.particleCount);
-    this.rotations = new Float32Array(this.particleCount);
-    this.scales = new Float32Array(this.particleCount);
+    this.basePositions = [];
+    this.baseScales = new Float32Array(this.particleCount);
+    this.phases = new Float32Array(this.particleCount);
+
+    // Paleta de Agua/Asfalto Húmedo (Azul pizarra, petróleo y noche)
+    this.waterPalette = [
+      new THREE.Color(0x283e4a),
+      new THREE.Color(0x1e2f38),
+      new THREE.Color(0x3a5a6a),
+      new THREE.Color(0x233742),
+    ];
+
+    // Definición estratégica de 3 charcos independientes (Centros en X y Anchos)
+    this.puddles = [
+      { centerX: -22.0, width: 18.0 },
+      { centerX: 2.0, width: 22.0 },
+      { centerX: 26.0, width: 14.0 },
+    ];
 
     this.init();
   }
 
-  init() {
-    // Geometría ovalada/garganteada usando un Shape de 12 segmentos achatado
-    const shape = new THREE.Shape();
-    const radiusX = 0.25; // Delgado
-    const radiusY = 0.9; // Alargado (efecto gota/chorreado)
-    shape.absellipse(0, 0, radiusX, radiusY, 0, Math.PI * 2, false, 0);
+  /**
+   * Muestrea únicamente la primera capa del Tejido Urbano (rojos/naranjas)
+   */
+  sampleUrbanColor(x) {
+    if (
+      !this.sceneContext ||
+      !this.sceneContext.urban ||
+      this.sceneContext.urban.length === 0
+    ) {
+      return new THREE.Color(0xd33f21); // Fallback Tejido Urbano
+    }
 
-    const geometry = new THREE.ShapeGeometry(shape, 8);
-    const material = new THREE.MeshBasicMaterial({
+    const searchRadiusX = 4.0;
+    const candidates = this.sceneContext.urban.filter(
+      (p) => Math.abs(p.x - x) < searchRadiusX,
+    );
+
+    if (candidates.length === 0) {
+      return new THREE.Color(0xd33f21);
+    }
+
+    // Seleccionamos la partícula más cercana horizontalmente
+    let bestCandidate = candidates[0];
+    let minDistance = Infinity;
+
+    for (let i = 0; i < candidates.length; i++) {
+      const cand = candidates[i];
+      const dist = Math.abs(cand.x - x);
+      if (dist < minDistance) {
+        minDistance = dist;
+        bestCandidate = cand;
+      }
+    }
+
+    return bestCandidate.color.clone();
+  }
+
+  init() {
+    // 1. Geometría: Círculos puros de 12 segmentos
+    const geometry = new THREE.CircleGeometry(0.5, 12);
+
+    this.material = new THREE.MeshBasicMaterial({
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.85,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
 
-    this.mesh = new THREE.InstancedMesh(geometry, material, this.particleCount);
+    this.mesh = new THREE.InstancedMesh(
+      geometry,
+      this.material,
+      this.particleCount,
+    );
+
+    // 2. Cota Límite Inferior (Debajo de Y_min del Tejido Urbano)
+    const yTopLimit = -45.5; // Ninguna partícula sube de esta altura
+    const puddleDepth = 7.0; // Profundidad vertical del charco
 
     for (let i = 0; i < this.particleCount; i++) {
-      // Distribución horizontal sobre la base proyectada
-      const x = (Math.random() - 0.5) * (this.config.xWidth || 160);
-      const z = (Math.random() - 0.5) * (this.config.zDepth || 80);
-      const y =
-        this.config.yMin +
-        Math.random() * (this.config.yMax - this.config.yMin);
+      // Elegimos uno de los 3 charcos al azar
+      const puddle =
+        this.puddles[Math.floor(Math.random() * this.puddles.length)];
 
-      this.baseY[i] = y;
-      this.speeds[i] = 0.08 + Math.random() * 0.12; // Velocidades desiguales
+      // Distribución gaussiana/concéntrica hacia el centro del charco
+      const normOffsetX = (Math.random() - 0.5) * puddle.width;
+      const x = puddle.centerX + normOffsetX;
 
-      // Micro-rotación aleatoria para romper la rigidez perfecta (-8° a +8°)
-      const rotZ = (Math.random() - 0.5) * 0.28;
-      this.rotations[i] = rotZ;
+      // Y estrictamente descendente desde yTopLimit
+      const normY = Math.random();
+      const y = yTopLimit - normY * puddleDepth;
+      const z = (Math.random() - 0.5) * 4.0;
 
-      // Escala individual (puntos finos a chorreones medianos)
-      const baseScale = 0.4 + Math.pow(Math.random(), 2) * 1.1;
-      this.scales[i] = baseScale;
+      // 3. Jerarquía Macro vs Micro (Círculos Base Agua vs Detalle Reflejo)
+      const isDetailPoint = Math.random() < 0.35; // 35% puntos de detalle reflejado
+      let scale;
+      let finalColor;
+
+      if (isDetailPoint) {
+        // Puntos Micro (Pequeños, superpuestos, con el color reflejado de la ciudad)
+        scale = 0.3 + Math.random() * 0.4;
+        finalColor = this.sampleUrbanColor(x);
+
+        // Suavizado óptico hacia el fondo de agua
+        finalColor.lerp(new THREE.Color(0x1a2730), normY * 0.4);
+      } else {
+        // Puntos Macro (Grandes, crean el cuerpo y la base sólida de agua del charco)
+        scale = 0.8 + Math.random() * 0.9;
+        finalColor =
+          this.waterPalette[
+            Math.floor(Math.random() * this.waterPalette.length)
+          ].clone();
+      }
+
+      this.baseScales[i] = scale;
+      this.basePositions.push({ x, y, z, isDetailPoint });
+      this.phases[i] = Math.random() * Math.PI * 2;
 
       this.dummy.position.set(x, y, z);
-      this.dummy.scale.set(
-        baseScale,
-        baseScale * (2.2 + Math.random() * 1.8),
-        1.0,
-      );
-      this.dummy.rotation.set(0, 0, rotZ);
+      // Garantizamos CÍRCULOS PUROS utilizando el mismo valor en X e Y
+      this.dummy.scale.set(scale, scale, 1.0);
+      this.dummy.rotation.set(0, 0, 0);
       this.dummy.updateMatrix();
 
       this.mesh.setMatrixAt(i, this.dummy.matrix);
-
-      // Selección aleatoria entre los 10 tonos de la paleta expandida
-      const color = this.colors[i % this.colors.length];
-      this.mesh.setColorAt(i, color);
+      this.mesh.setColorAt(i, finalColor);
     }
 
     this.mesh.instanceMatrix.needsUpdate = true;
@@ -84,32 +153,28 @@ export class BaseRefractaria {
   }
 
   /**
-   * Actualización de movimiento de drenaje vertical
+   * Animación de vaivén líquido tenue
    */
-  update(stress, frameCount) {
+  update(stress = 0.0, frameCount = 0) {
     for (let i = 0; i < this.particleCount; i++) {
-      this.mesh.getMatrixAt(i, this.dummy.matrix);
-      this.dummy.matrix.decompose(
-        this.dummy.position,
-        this.dummy.quaternion,
-        this.dummy.scale,
-      );
+      const pos = this.basePositions[i];
+      const phase = this.phases[i];
+      const baseScale = this.baseScales[i];
 
-      // Desplazamiento descendente acelerado levemente por el nivel de estrés
-      const currentSpeed = this.speeds[i] * (1.0 + stress * 0.6);
-      this.dummy.position.y -= currentSpeed;
+      // Sutil ondulación de agua
+      const waveX =
+        Math.sin(frameCount * 0.02 + pos.y * 0.4 + phase) *
+        (0.08 + stress * 0.15);
+      const waveY = Math.cos(frameCount * 0.015 + pos.x * 0.3) * 0.03;
 
-      // Reciclaje continuo al llegar al fondo
-      if (this.dummy.position.y < this.config.yMin) {
-        this.dummy.position.y = this.config.yMax;
-      }
+      const currentScale =
+        baseScale * (1.0 + Math.sin(frameCount * 0.025 + phase) * 0.08);
 
-      // Re-aplicar rotación y escala
-      this.dummy.rotation.set(0, 0, this.rotations[i]);
-      const baseScale = this.scales[i];
-      this.dummy.scale.set(baseScale, baseScale * 2.8, 1.0);
-
+      this.dummy.position.set(pos.x + waveX, pos.y + waveY, pos.z);
+      // Mantenemos proporciones circulares uniformes durante la animación
+      this.dummy.scale.set(currentScale, currentScale, 1.0);
       this.dummy.updateMatrix();
+
       this.mesh.setMatrixAt(i, this.dummy.matrix);
     }
 

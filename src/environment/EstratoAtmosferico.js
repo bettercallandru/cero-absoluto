@@ -177,4 +177,30 @@ export class EstratoAtmosferico {
 
     this.mesh.instanceMatrix.needsUpdate = true;
   }
+
+  /**
+   * Exporta las partículas del Estrato Atmosférico / Bruma
+   */
+  getParticlesData() {
+    const data = [];
+    const matrix = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const color = new THREE.Color();
+
+    for (let i = 0; i < this.particleCount; i++) {
+      this.mesh.getMatrixAt(i, matrix);
+      position.setFromMatrixPosition(matrix);
+      this.mesh.getColorAt(i, color);
+
+      data.push({
+        x: position.x,
+        y: position.y,
+        z: position.z,
+        color: color.clone(),
+        layer: "estratoAtmosferico",
+      });
+    }
+
+    return data;
+  }
 }

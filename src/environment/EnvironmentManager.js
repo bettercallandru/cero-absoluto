@@ -1,7 +1,6 @@
 /**
- * FACHADA INTEGRADORA DEL ENTORNO - CERO ABSOLUTO
+ * FACHADA INTEGRADORA DEL ENTORNO - PAISAJE LIMPIO
  */
-import { BaseRefractaria } from "./BaseRefractaria.js";
 import { TejidoUrbano } from "./TejidoUrbano.js";
 import { MasaTectonica } from "./MasaTectonica.js";
 import { EstratoAtmosferico } from "./EstratoAtmosferico.js";
@@ -10,8 +9,7 @@ export class EnvironmentManager {
   constructor(scene) {
     this.scene = scene;
 
-    // Instanciación de las 4 capas independientes
-    /* this.baseRefractaria = new BaseRefractaria(scene); */
+    // Instanciación de las 3 capas orgánicas del paisaje
     this.tejidoUrbano = new TejidoUrbano(scene);
     this.masaTectonica = new MasaTectonica(scene);
     this.estratoAtmosferico = new EstratoAtmosferico(scene);
@@ -24,7 +22,7 @@ export class EnvironmentManager {
     const windSpeed = record ? record.wind_speed_180m : 12.0;
     const relativeHumidity = record ? record.relative_humidity_2m : 0.65;
 
-    /* this.baseRefractaria.update(stress, frameCount); */
+    // Actualización de capas
     this.tejidoUrbano.update(stress, frameCount);
     this.masaTectonica.update(stress, frameCount, isSnap);
     this.estratoAtmosferico.update(windSpeed, relativeHumidity, frameCount);
