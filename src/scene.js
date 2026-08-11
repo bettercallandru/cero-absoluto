@@ -1,7 +1,7 @@
 // src/SceneManager.js
 import * as THREE from "three";
 
-import { AvatarEngine } from "./avatar.js";
+import { Avatar } from "./avatar.js";
 import { EnvironmentManager } from "./environment/EnvironmentManager.js";
 import { ArtDirection } from "./ArtDirection.js";
 import { ColorPalette } from "./ColorPalette.js";
@@ -10,7 +10,6 @@ export class SceneManager {
   constructor(simulation, audio) {
     this.simulation = simulation;
     this.audio = audio;
-    this.avatarEngine = new AvatarEngine();
 
     this.container = document.getElementById("canvas-container");
     this.width = window.innerWidth;
@@ -20,9 +19,13 @@ export class SceneManager {
 
     this.initThree();
     this.addLights();
-    this.initAvatarRenderer();
+
+    // Instanciación limpia de componentes
+    this.avatar = new Avatar();
+    this.scene.add(this.avatar.group);
+
     this.initEnvironmentManager();
-    this.initUI(); // Inyección de la Interfaz
+    this.initUI();
     this.addEvents();
   }
 
@@ -58,107 +61,13 @@ export class SceneManager {
   addLights() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.scene.add(ambientLight);
-
-    this.heartLight = new THREE.PointLight(0xd92626, 3.0, 45);
-    this.scene.add(this.heartLight);
-  }
-
-  initAvatarRenderer() {
-    this.avatarGroup = new THREE.Group();
-    this.avatarGroup.position.set(-1.0, -9.0, 0.0);
-    this.avatarGroup.scale.set(2.4, 2.4, 2.4);
-    this.scene.add(this.avatarGroup);
-
-    // 1. Halo Trasero Papel
-    this.bgPaperMat = new THREE.MeshBasicMaterial({
-      color: 0xfaf8f5,
-      side: THREE.DoubleSide,
-    });
-    this.bgPaperMesh = new THREE.Mesh(
-      new THREE.BufferGeometry(),
-      this.bgPaperMat,
-    );
-    this.bgPaperMesh.position.z = -0.05;
-    this.avatarGroup.add(this.bgPaperMesh);
-
-    // 2. Túnica Oscura
-    this.tunicMat = new THREE.MeshBasicMaterial({
-      color: 0x22252a,
-      side: THREE.DoubleSide,
-    });
-    this.tunicMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.tunicMat);
-    this.avatarGroup.add(this.tunicMesh);
-
-    // 3. Cabeza/Cabello
-    this.headMat = new THREE.MeshBasicMaterial({
-      color: 0x1f383a,
-      side: THREE.DoubleSide,
-    });
-    this.headMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.headMat);
-    this.avatarGroup.add(this.headMesh);
-
-    // 4. Contorno Grafito
-    this.outlineMat = new THREE.LineBasicMaterial({
-      color: 0x0d0d0d,
-      linewidth: 2,
-    });
-    this.outlineLine = new THREE.LineLoop(
-      new THREE.BufferGeometry(),
-      this.outlineMat,
-    );
-    this.outlineLine.position.z = 0.08;
-    this.avatarGroup.add(this.outlineLine);
-
-    // 5. Brazo
-    this.armLine = new THREE.Line(new THREE.BufferGeometry(), this.outlineMat);
-    this.avatarGroup.add(this.armLine);
-
-    // 6. Corazón Vectorial
-    const heartShape = this.avatarEngine.getHeartShape();
-    const heartGeo = new THREE.ShapeGeometry(heartShape);
-    const heartMat = new THREE.MeshBasicMaterial({
-      color: 0xd92626,
-      side: THREE.DoubleSide,
-    });
-    this.heartMesh = new THREE.Mesh(heartGeo, heartMat);
-    this.avatarGroup.add(this.heartMesh);
-
-    // 7. Partículas
-    this.particlesGeo = new THREE.BufferGeometry();
-    const particlesMat = new THREE.PointsMaterial({
-      color: 0x1a1a1a,
-      size: 0.18,
-      transparent: true,
-      opacity: 0.75,
-    });
-    this.particlesMesh = new THREE.Points(this.particlesGeo, particlesMat);
-    this.avatarGroup.add(this.particlesMesh);
-
-    // 8. Línea de Suelo
-    const groundPoints = [
-      new THREE.Vector3(-18, -5.1, -0.1),
-      new THREE.Vector3(-5, -5.0, -0.1),
-      new THREE.Vector3(5, -5.05, -0.1),
-      new THREE.Vector3(18, -4.95, -0.1),
-    ];
-    const groundGeo = new THREE.BufferGeometry().setFromPoints(groundPoints);
-    const groundMat = new THREE.LineBasicMaterial({
-      color: 0x1a1a1a,
-      linewidth: 1.5,
-    });
-    const groundLine = new THREE.Line(groundGeo, groundMat);
-    this.avatarGroup.add(groundLine);
   }
 
   initEnvironmentManager() {
     this.environment = new EnvironmentManager(this.scene);
   }
 
-  /**
-   * Crea la estructura HTML y CSS de la interfaz lateral
-   */
   initUI() {
-    // 1. Estilos inyectados
     const styleElement = document.createElement("style");
     styleElement.textContent = `
       .sim-ui-panel {
@@ -238,7 +147,6 @@ export class SceneManager {
     `;
     document.head.appendChild(styleElement);
 
-    // 2. Contenedor DOM
     this.uiContainer = document.createElement("div");
     this.uiContainer.className = "sim-ui-panel";
     this.uiContainer.innerHTML = `
@@ -251,7 +159,7 @@ export class SceneManager {
       </div>
       <div class="sim-ui-row">
         <span class="sim-ui-label">Iteración:</span>
-        <span class="sim-ui-value" id="ui-iteration">0 / 0</span>
+        <span class="sim-ui-value" id="ui-iteration">0 / 72</span>
       </div>
 
       <hr class="sim-ui-divider" />
@@ -290,7 +198,6 @@ export class SceneManager {
 
     document.body.appendChild(this.uiContainer);
 
-    // Referencias a los elementos HTML
     this.uiElements = {
       date: document.getElementById("ui-date"),
       progress: document.getElementById("ui-progress"),
@@ -304,14 +211,9 @@ export class SceneManager {
     };
   }
 
-  /**
-   * Actualiza el contenido de la interfaz con los datos de la simulación
-   * ajustado a 72 iteraciones (72 horas / 3 días).
-   */
   updateUI(record, stress) {
     if (!this.uiElements) return;
 
-    // 1. Total de iteraciones fijado en 72 (3 días / 72 horas) con fallback seguro
     const totalRecords =
       this.simulation &&
       this.simulation.records &&
@@ -319,7 +221,6 @@ export class SceneManager {
         ? this.simulation.records.length
         : 72;
 
-    // 2. Obtener el índice actual (1-indexed para lectura humana: de 1 a 72)
     const rawIndex =
       this.simulation && typeof this.simulation.currentIndex === "number"
         ? this.simulation.currentIndex
@@ -327,11 +228,9 @@ export class SceneManager {
 
     const currentStep = Math.min(Math.max(rawIndex + 1, 1), totalRecords);
 
-    // 3. Cálculo de porcentaje de progreso (0% al 100%)
     const progressPct = ((currentStep / totalRecords) * 100).toFixed(1);
     const stressPct = Math.min(Math.max(stress * 100, 0), 100).toFixed(0);
 
-    // 4. Inyección en la interfaz
     this.uiElements.date.textContent =
       record && record.datetime ? record.datetime : "Registro continuo";
     this.uiElements.progress.textContent = `${progressPct}%`;
@@ -340,16 +239,14 @@ export class SceneManager {
     this.uiElements.stress.textContent = `${stressPct}%`;
     this.uiElements.stressBar.style.width = `${stressPct}%`;
 
-    // Cambiar color de la barra de estrés según intensidad
     if (stress > 0.7) {
-      this.uiElements.stressBar.style.background = "#d92626"; // Rojo
+      this.uiElements.stressBar.style.background = "#d92626";
     } else if (stress > 0.35) {
-      this.uiElements.stressBar.style.background = "#e69500"; // Naranja
+      this.uiElements.stressBar.style.background = "#e69500";
     } else {
-      this.uiElements.stressBar.style.background = "#4a90e2"; // Azul calmo
+      this.uiElements.stressBar.style.background = "#4a90e2";
     }
 
-    // Datos meteorológicos
     if (record) {
       this.uiElements.temp.textContent =
         record.temperature_180m !== undefined
@@ -373,86 +270,18 @@ export class SceneManager {
   toggleUI() {
     this.uiVisible = !this.uiVisible;
     if (this.uiContainer) {
-      if (this.uiVisible) {
-        this.uiContainer.classList.remove("hidden");
-      } else {
-        this.uiContainer.classList.add("hidden");
-      }
+      this.uiContainer.classList.toggle("hidden", !this.uiVisible);
     }
   }
 
   toggleFullscreen() {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error(
-          `Error intentando entrar en pantalla completa: ${err.message}`,
-        );
-      });
+      document.documentElement
+        .requestFullscreen()
+        .catch((err) => console.error(err));
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
+      if (document.exitFullscreen) document.exitFullscreen();
     }
-  }
-
-  updateAvatar(stress, frameCount) {
-    const data = this.avatarEngine.updateFrameData(stress, frameCount);
-
-    // 1. Relleno Túnica
-    const tunicShape = new THREE.Shape(data.tunicPoints);
-    this.tunicMesh.geometry.dispose();
-    this.tunicMesh.geometry = new THREE.ShapeGeometry(tunicShape);
-
-    // 2. Halo Trasero Papel
-    const bgShape = new THREE.Shape(data.tunicPoints);
-    this.bgPaperMesh.geometry.dispose();
-    this.bgPaperMesh.geometry = new THREE.ShapeGeometry(bgShape);
-    this.bgPaperMesh.scale.set(1.06, 1.05, 1.0);
-
-    // 3. Cabeza
-    const headShape = new THREE.Shape(data.headPoints);
-    this.headMesh.geometry.dispose();
-    this.headMesh.geometry = new THREE.ShapeGeometry(headShape);
-
-    // 4. Contorno de Grafito
-    const outline3D = data.tunicPoints.map(
-      (p) => new THREE.Vector3(p.x, p.y, 0),
-    );
-    this.outlineLine.geometry.dispose();
-    this.outlineLine.geometry = new THREE.BufferGeometry().setFromPoints(
-      outline3D,
-    );
-
-    // 5. Brazo
-    this.armLine.geometry.dispose();
-    this.armLine.geometry = new THREE.BufferGeometry().setFromPoints(
-      data.armPoints,
-    );
-
-    // 6. Corazón Vectorial
-    this.heartMesh.position.set(
-      data.heart.position.x,
-      data.heart.position.y,
-      data.heart.position.z,
-    );
-    this.heartMesh.scale.setScalar(data.heart.radius);
-
-    this.heartLight.position.set(
-      this.avatarGroup.position.x + data.heart.position.x,
-      this.avatarGroup.position.y + data.heart.position.y,
-      3.0,
-    );
-    this.heartLight.intensity = data.heart.intensidad * 2.8;
-
-    // 7. Partículas
-    this.particlesGeo.setAttribute(
-      "position",
-      new THREE.BufferAttribute(data.particles, 3),
-    );
-    this.particlesGeo.attributes.position.needsUpdate = true;
-
-    // Respiración corporal leve
-    this.avatarGroup.position.y = -9.0 + Math.sin(frameCount * 0.015) * 0.12;
   }
 
   addEvents() {
@@ -466,7 +295,6 @@ export class SceneManager {
       this.renderer.setSize(this.width, this.height);
     });
 
-    // ATAJOS DE TECLADO: H (Ocultar/Mostrar UI) y T (Pantalla Completa)
     window.addEventListener("keydown", (event) => {
       if (event.key === "h" || event.key === "H") {
         this.toggleUI();
@@ -504,8 +332,12 @@ export class SceneManager {
           );
         }
 
-        this.updateAvatar(stress, frameCount);
-        this.updateUI(record, stress); // Actualizar interfaz en vivo
+        // Llamada ultra limpia al avatar
+        if (this.avatar) {
+          this.avatar.update(stress, frameCount);
+        }
+
+        this.updateUI(record, stress);
 
         if (this.audio && record.datetime) {
           this.audio.update(
