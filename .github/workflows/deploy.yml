@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # O 'master', asegúrate de poner el nombre de tu rama principal
+    branches: [ main ] # Asegúrate de poner 'master' si tu rama principal se llama así
 
 permissions:
   contents: read
@@ -26,7 +26,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Actualizado a Node 22 para compatibilidad total
           cache: 'npm'
 
       - name: Install dependencies
