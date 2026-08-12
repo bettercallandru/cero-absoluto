@@ -1,7 +1,7 @@
 /**
  * CAPA 4: ESTRATO ATMOSFÉRICO (Ecosistema Dinámico por Datos)
- * - Oleaje Atmosférico: Turbulencia sinusoidal accionada por el viento.
- * - Condensación por Humedad: Control de opacidad, densidad y flujo descendente (orográfico).
+ * - Oscilación Pendular con Fase Continua (Sin saltos de teletransporte al cambiar datos).
+ * - Moduladores en tiempo real de velocidad por viento y opacidad por humedad.
  * - Grano y micro-vibración Browniana viva en partículas deshilachadas.
  */
 import * as THREE from "three";
@@ -17,14 +17,65 @@ export class EstratoAtmosferico {
     this.particleCount = 5200;
     this.dummy = new THREE.Object3D();
 
-    // Centros de nubes estratégicos
+    // Centros de nubes con movimiento pendular y fase individual
     this.cloudCenters = [
-      { x: -50, y: 40, z: -8, radiusX: 25, radiusY: 10, baseSpeed: 1.0 },
-      { x: -15, y: 46, z: 8, radiusX: 30, radiusY: 12, baseSpeed: 0.8 },
-      { x: 22, y: 30, z: -15, radiusX: 22, radiusY: 9, baseSpeed: 1.2 },
-      { x: 58, y: 50, z: 2, radiusX: 28, radiusY: 11, baseSpeed: 0.9 },
-      { x: 2, y: 20, z: -5, radiusX: 32, radiusY: 8, baseSpeed: 1.1 },
+      {
+        originX: -4,
+        y: 38,
+        z: -4,
+        radiusX: 18,
+        radiusY: 8,
+        rangeX: 7,
+        speed: 0.005,
+        phase: 0.0,
+      },
+      {
+        originX: 4,
+        y: 44,
+        z: 4,
+        radiusX: 20,
+        radiusY: 9,
+        rangeX: 6,
+        speed: 0.004,
+        phase: 1.5,
+      },
+      {
+        originX: -2,
+        y: 30,
+        z: -6,
+        radiusX: 16,
+        radiusY: 7,
+        rangeX: 8,
+        speed: 0.006,
+        phase: 3.0,
+      },
+      {
+        originX: 5,
+        y: 48,
+        z: 2,
+        radiusX: 19,
+        radiusY: 8,
+        rangeX: 5,
+        speed: 0.003,
+        phase: 4.2,
+      },
+      {
+        originX: 0,
+        y: 22,
+        z: -2,
+        radiusX: 22,
+        radiusY: 7,
+        rangeX: 7,
+        speed: 0.005,
+        phase: 2.1,
+      },
     ];
+
+    // Asignamos posición inicial y estado de fase continua
+    this.cloudCenters.forEach((center) => {
+      center.x = center.originX;
+      center.currentPhase = center.phase; // Se usará como acumulador fluido
+    });
 
     this.offsets = [];
     this.baseScales = new Float32Array(this.particleCount);
@@ -59,7 +110,7 @@ export class EstratoAtmosferico {
 
       const offsetX = Math.cos(angle) * (radFactor * center.radiusX);
       const offsetY = Math.sin(angle) * (radFactor * center.radiusY);
-      const offsetZ = (Math.random() - 0.5) * 14.0;
+      const offsetZ = (Math.random() - 0.5) * 10.0;
 
       const distFromCenter = Math.sqrt(
         Math.pow(offsetX / center.radiusX, 2) +
@@ -71,10 +122,10 @@ export class EstratoAtmosferico {
 
       let size = 1.0;
       if (isDust) {
-        size = 0.22 + Math.random() * 0.42;
+        size = 0.2 + Math.random() * 0.4;
         this.isMicroDust[i] = 1;
       } else {
-        size = 0.85 + Math.random() * 1.15;
+        size = 0.8 + Math.random() * 1.1;
         this.isMicroDust[i] = 0;
       }
 
@@ -107,64 +158,61 @@ export class EstratoAtmosferico {
   }
 
   /**
-   * Modulador dinámico de la bruma guiado por Viento y Humedad
-   * @param {number} windSpeed - Velocidad en km/h (ej: 5.0 a 35.0)
-   * @param {number} humidity - Porcentaje normado (0.0 = seco, 1.0 = saturado)
+   * Modulador dinámico guiado por Viento y Humedad
+   * @param {number} windSpeed - Velocidad del viento en km/h
+   * @param {number} humidity - Porcentaje normado (0.0 a 1.0)
    * @param {number} frameCount - Contador de fotogramas
    */
   update(windSpeed = 12.0, humidity = 0.65, frameCount = 0) {
     // 1. DINÁMICA DE HUMEDAD (Grosor y Opacidad)
-    // A mayor humedad, la bruma es más opaca y las partículas se expanden suavemente
     const normHumidity = THREE.MathUtils.clamp(humidity, 0.1, 1.0);
     this.material.opacity = THREE.MathUtils.lerp(0.15, 0.48, normHumidity);
 
     const scaleHumidityBoost = 1.0 + (normHumidity - 0.5) * 0.35;
 
-    // 2. DINÁMICA DE VIENTO (Oleaje y Deriva)
+    // 2. DINÁMICA DE VIENTO (Modifica el ritmo de avance sin saltos de fase)
     const currentWind = Math.max(2.0, windSpeed);
-    const speedFactor = currentWind * 0.0022;
-    const waveAmplitude = Math.min(8.0, currentWind * 0.25); // Altura de las olas atmosféricas
+    const windMultiplier = Math.max(0.5, currentWind / 12.0);
+    const waveAmplitude = Math.min(6.0, currentWind * 0.2);
 
-    // Movimiento global de los centros
+    // MOVIMIENTO PENDULAR CON INTEGRACIÓN CONTINUA DE FASE
     for (let c = 0; c < this.cloudCenters.length; c++) {
       const center = this.cloudCenters[c];
-      center.x += speedFactor * center.baseSpeed;
 
-      // Movimiento descendente por la ladera si la humedad es muy alta
+      // Sumamos al estado acumulado en lugar de recalcular desde el frame cero
+      center.currentPhase += center.speed * windMultiplier;
+
+      // Posición X calculada suavemente desde la fase continua
+      center.x = center.originX + Math.sin(center.currentPhase) * center.rangeX;
+
+      // Descenso/Ascenso sutil por humedad (Ladera abajo)
       if (normHumidity > 0.6) {
-        center.y -= (normHumidity - 0.6) * 0.02; // Chorro de bruma ladera abajo
+        center.y -= (normHumidity - 0.6) * 0.01;
       } else if (center.y < 35) {
-        center.y += 0.01; // Recupera altura suavemente
-      }
-
-      // Reciclaje continuo de horizonte
-      if (center.x > 95) {
-        center.x = -95;
-        center.y = 30 + Math.random() * 25; // Reaparece en una cota variable
+        center.y += 0.005;
       }
     }
 
-    // Actualización punto a punto (Oleaje + Micro-vibración)
+    // Actualización punto a punto de las partículas
     for (let i = 0; i < this.particleCount; i++) {
       const cloudIdx = this.cloudAssignments[i];
       const center = this.cloudCenters[cloudIdx];
       const offset = this.offsets[i];
       const phase = this.individualPhases[i];
 
-      // OLEAJE SINE-WAVE (Viento ondulante de la Sabana)
-      const globalWaveX = Math.sin(frameCount * 0.012 + center.x * 0.04) * 1.5;
+      // Oleaje vertical dinámico (Onda suave)
+      const globalWaveX = Math.sin(frameCount * 0.012 + center.x * 0.04) * 1.2;
       const globalWaveY =
         Math.cos(frameCount * 0.018 + center.x * 0.03) * waveAmplitude;
 
       // Micro-turbulencia individual
       const microVibe =
-        Math.sin(frameCount * 0.03 + phase) * (0.2 + currentWind * 0.01);
+        Math.sin(frameCount * 0.03 + phase) * (0.18 + currentWind * 0.008);
 
       const x = center.x + offset.x + globalWaveX;
       const y = center.y + offset.y + globalWaveY + microVibe;
       const z = center.z + offset.z;
 
-      // Insuflado de escala por humedad
       const currentScale = this.baseScales[i] * scaleHumidityBoost;
 
       this.dummy.position.set(x, y, z);
@@ -178,9 +226,6 @@ export class EstratoAtmosferico {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  /**
-   * Exporta las partículas del Estrato Atmosférico / Bruma
-   */
   getParticlesData() {
     const data = [];
     const matrix = new THREE.Matrix4();

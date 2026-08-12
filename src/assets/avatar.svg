@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+
+    <linearGradient id="ruanaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#52565B"/>
+      <stop offset="60%" stop-color="#3B3E43"/>
+      <stop offset="100%" stop-color="#282A2E"/>
+    </linearGradient>
+
+    <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8BBEC1"/>
+      <stop offset="50%" stop-color="#508387"/>
+      <stop offset="100%" stop-color="#284B4E"/>
+    </linearGradient>
+
+    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5EC"/>
+      <stop offset="100%" stop-color="#E8D3C1"/>
+    </linearGradient>
+  </defs>
+
+  <g id="personaje_rolo_v3" transform="translate(0, 10)">
+
+    <!-- SOMBRA BASE -->
+    <g id="sombra">
+      <ellipse cx="400" cy="735" rx="130" ry="14" fill="#000" opacity="0.1" />
+    </g>
+
+    <!-- PIES -->
+    <g id="pies">
+      <path d="M 378,690 L 385,730 L 394,690 Z" fill="#1E2023" />
+      <path d="M 406,690 L 415,730 L 422,690 Z" fill="#1E2023" />
+    </g>
+
+    <!-- TÚNICA / RUANA -->
+    <g id="tunica">
+      <!-- Silueta Principal de la Ruana -->
+      <path d="M 400,250 C 480,260 610,370 625,500 C 640,640 510,690 400,690 C 290,690 160,640 175,500 C 190,370 320,260 400,250 Z"
+            fill="url(#ruanaGrad)" stroke="#1A1C1E" stroke-width="2" filter="url(#softShadow)" />
+
+      <!-- Pliegues de la Ruana -->
+      <g id="pliegues_tunica">
+        <path d="M 400,250 C 340,330 290,470 270,685" fill="none" stroke="#25272A" stroke-width="2.5" />
+        <path d="M 400,250 C 460,330 510,470 530,685" fill="none" stroke="#25272A" stroke-width="2.5" />
+        <path d="M 400,250 C 370,310 345,390 345,470 C 345,550 370,645 400,688" fill="none" stroke="#1A1C1E" stroke-width="2" />
+        <path d="M 400,250 C 430,310 455,390 455,470 C 455,550 430,645 400,688" fill="none" stroke="#1A1C1E" stroke-width="2" />
+      </g>
+    </g>
+
+    <!-- BRAZOS Y MANOS -->
+    <g id="brazos">
+      <!-- Brazos -->
+      <path id="brazo_izquierdo" d="M 295,440 C 320,480 360,510 425,495" fill="none" stroke="#E8D3C1" stroke-width="9" stroke-linecap="round" />
+      <path id="brazo_derecho" d="M 505,440 C 480,480 440,510 375,495" fill="none" stroke="#FFF5EC" stroke-width="9" stroke-linecap="round" />
+
+      <!-- Manos -->
+      <g id="manos">
+        <path id="mano_izquierda" d="M 425,495 Q 435,493 440,498" fill="none" stroke="#E8D3C1" stroke-width="3" stroke-linecap="round" />
+        <path id="mano_derecha" d="M 375,495 Q 365,493 360,498" fill="none" stroke="#FFF5EC" stroke-width="3" stroke-linecap="round" />
+      </g>
+    </g>
+
+    <!-- CUELLO -->
+    <g id="cuello">
+      <path d="M 388,230 L 412,230 L 408,260 Q 400,265 392,260 Z" fill="url(#skinGrad)" stroke="#3A322B" stroke-width="1" />
+    </g>
+
+    <!-- CABEZA -->
+    <g id="cabeza">
+      <ellipse id="base_cabeza" cx="400" cy="200" rx="55" ry="50" fill="#1C383A" />
+
+      <!-- Rostro -->
+      <g id="rostro">
+        <path d="M 368,185 C 362,230 380,268 400,272 C 420,268 438,230 432,185 Z" 
+              fill="url(#skinGrad)" stroke="#2D2621" stroke-width="1.8" stroke-linejoin="round" />
+        <!-- Rubor -->
+        <g id="rubor">
+          <ellipse cx="376" cy="242" rx="8" ry="4" fill="#E89B93" opacity="0.45" />
+          <ellipse cx="424" cy="242" rx="8" ry="4" fill="#E89B93" opacity="0.45" />
+        </g>
+      </g>
+
+      <!-- Cejas -->
+      <g id="cejas">
+        <path d="M 372,225 Q 382,218 392,225" fill="none" stroke="#3A322B" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M 428,225 Q 418,218 408,225" fill="none" stroke="#3A322B" stroke-width="2.2" stroke-linecap="round" />
+      </g>
+
+      <!-- Ojos -->
+      <g id="ojos">
+        <g id="ojo_izquierdo">
+          <path d="M 372,236 Q 382,245 392,236" fill="none" stroke="#211C18" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M 375,238 C 382,242 389,242 391,238" fill="none" stroke="#508387" stroke-width="1.5" />
+          <circle cx="382" cy="239" r="1.5" fill="#211C18" />
+        </g>
+        <g id="ojo_derecho">
+          <path d="M 408,236 Q 418,245 428,236" fill="none" stroke="#211C18" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M 409,238 C 411,242 418,242 425,238" fill="none" stroke="#508387" stroke-width="1.5" />
+          <circle cx="418" cy="239" r="1.5" fill="#211C18" />
+        </g>
+      </g>
+
+      <!-- Nariz -->
+      <g id="nariz">
+        <path d="M 400,232 L 397,247 L 401,248" fill="none" stroke="#CBB3A1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </g>
+
+      <!-- Boca -->
+      <g id="boca">
+        <path d="M 393,258 Q 400,255 407,258" fill="none" stroke="#8A5A54" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- Cabello -->
+      <g id="cabello">
+        <path d="M 368,185 C 330,175 315,225 330,265 C 345,285 362,275 365,245 C 362,215 368,195 368,185 Z" fill="url(#hairGrad)" stroke="#1A3335" stroke-width="1.8" />
+        <path d="M 432,185 C 470,175 485,225 470,265 C 455,285 438,275 435,245 C 438,215 432,195 432,185 Z" fill="url(#hairGrad)" stroke="#1A3335" stroke-width="1.8" />
+        <path d="M 365,185 C 380,210 392,212 400,202 C 408,212 420,210 435,185 C 410,170 390,170 365,185 Z" fill="url(#hairGrad)" stroke="#1A3335" stroke-width="1.8" />
+        <path d="M 370,182 C 385,160 415,160 430,182 C 410,195 390,195 370,182 Z" fill="#A5D4D7" opacity="0.6" />
+      </g>
+    </g>
+
+  </g>
+</svg>

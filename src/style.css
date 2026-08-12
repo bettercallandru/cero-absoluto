@@ -1,25 +1,26 @@
-/* src/style.css */
-* {
-  box-sizing: border-box;
-}
-
-html, body {
+body {
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
+  background-color: #000000; /* Fondo negro para la sala de proyección */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   overflow: hidden;
-  background-color: #0a0c12;
 }
 
 #canvas-container {
   width: 100vw;
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  /* Fuerza la proporción 9:16 centrada */
+  aspect-ratio: 9 / 16;
+  max-width: calc(100vh * (9 / 16));
+  max-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); /* Sombra sutil para separar del fondo */
 }
 
-canvas {
-  display: block;
+#canvas-container canvas {
+  width: 100% !important;
+  height: 100% !important;
 }

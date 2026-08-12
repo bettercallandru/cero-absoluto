@@ -1,8 +1,9 @@
 /**
- * CAPA: MASA TECTÓNICA (Versión MVP Final)
- * - Alta densidad de grano y micro-detalles (40% de micro-puntos en capa superior Z).
+ * CAPA: MASA TECTÓNICA (Versión Asimétrica 9:16)
+ * - Composición orgánica descalzada (Zigzag natural de picos y hombros).
+ * - Alta densidad de grano y micro-detalles (40% de micro-puntos).
  * - Volumen masivo e impenetrable con base de puntos macro.
- * - Sin presencia de rojos en cúpulas y con puntos joya en el frente.
+ * - Sin cortes en los bordes gracias a anchos acotados al marco vertical.
  */
 import * as THREE from "three";
 import { ColorPalette } from "../ColorPalette.js";
@@ -112,16 +113,24 @@ export class MasaTectonica {
 
     const TOTAL_LAYERS = 4;
 
+    // --- MATRIZ ASIMÉTRICA EN ZIGZAG PARA EL MARCO 9:16 ---
     const layerConfigs = [
-      { peakX: 8, height: 46, width: 108, baseY: -38, skew: 0.18 },
-      { peakX: 16, height: 54, width: 110, baseY: -36, skew: 0.28 },
-      { peakX: 4, height: 62, width: 116, baseY: -34, skew: 0.15 },
-      { peakX: 20, height: 72, width: 124, baseY: -32, skew: 0.32 },
+      // Capa 0 (Verde frontal clara): Abraza el pie derecho del avatar
+      { peakX: 3, height: 40, width: 66, baseY: -38, skew: 0.05 },
+
+      // Capa 1 (Verde intermedia): Masa ligera hacia el centro-izquierda
+      { peakX: -3, height: 48, width: 70, baseY: -36, skew: -0.06 },
+
+      // Capa 2 (Verde oscura profunda): Hombro dominante elevado a la DERECHA
+      { peakX: 7, height: 58, width: 76, baseY: -34, skew: 0.14 },
+
+      // Capa 3 (Fondo gris/slate): Pico principal elevado a la IZQUIERDA
+      { peakX: -6, height: 68, width: 82, baseY: -32, skew: -0.12 },
     ];
 
     const basePointSize = 1.72;
     const minPointSizeLimit = 0.82;
-    const baseCount = 3400; // Incrementado para sostener el grano fino sin perder opacidad
+    const baseCount = 3400;
 
     const layerParticleCounts = new Array(TOTAL_LAYERS);
     let totalParticles = 0;
@@ -195,16 +204,13 @@ export class MasaTectonica {
         let finalSize = currentLayerBaseScale;
 
         if (isMicroDetail) {
-          // Puntos pequeños de detalle y grano
           const microFactor = 0.35 + Math.random() * 0.38;
           finalSize *= microFactor;
         } else {
-          // Bloques macizos que sostienen el volumen
           const macroFactor = 1.12 + strataWave * 0.3 + Math.random() * 0.22;
           finalSize *= macroFactor;
         }
 
-        // Coloca el micro-detalle ligeramente por delante para flotar sobre las masas grandes
         const z =
           layerZ + (isMicroDetail ? 0.45 : 0.0) + (Math.random() - 0.5) * 1.2;
 
@@ -259,9 +265,6 @@ export class MasaTectonica {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  /**
-   * Exporta las partículas de la Ladera Verde / Masa Tectónica
-   */
   getParticlesData() {
     const data = [];
     const matrix = new THREE.Matrix4();

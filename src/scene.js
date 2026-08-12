@@ -12,10 +12,15 @@ export class SceneManager {
     this.audio = audio;
 
     this.container = document.getElementById("canvas-container");
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    this.width = this.container
+      ? this.container.clientWidth
+      : window.innerWidth;
+    this.height = this.container
+      ? this.container.clientHeight
+      : window.innerHeight;
 
     this.uiVisible = true;
+    this.uiTimeout = null;
 
     this.initThree();
     this.addLights();
@@ -31,10 +36,13 @@ export class SceneManager {
 
   initThree() {
     this.scene = new THREE.Scene();
+
+    // Mantenemos el fondo beige/pergamino original para la escena 3D
     this.scene.background = new THREE.Color(
       ColorPalette.soporte.pergaminoViejo,
     );
 
+    // Respetamos 100% tu dirección de arte y cámara original
     const { fov, near, far, position, target } = ArtDirection.camera;
     this.camera = new THREE.PerspectiveCamera(
       fov,
@@ -43,7 +51,10 @@ export class SceneManager {
       far,
     );
 
-    this.camera.position.set(position.x, position.y, position.z);
+    // Factor de alejamiento para encuadrar el paisaje horizontal en formato 9:16
+    const ZOOM_FACTOR = 2;
+
+    this.camera.position.set(position.x, position.y, position.z * ZOOM_FACTOR);
     this.camera.lookAt(target.x, target.y, target.z);
 
     this.renderer = new THREE.WebGLRenderer({
@@ -71,65 +82,65 @@ export class SceneManager {
     const styleElement = document.createElement("style");
     styleElement.textContent = `
       .sim-ui-panel {
-        position: fixed;
+        position: absolute;
         top: 24px;
         left: 24px;
-        width: 260px;
-        background: rgba(26, 26, 26, 0.88);
-        color: #e8e3d8;
+        width: 240px;
+        background: rgba(245, 240, 235, 0.88);
+        color: #1a1a1a;
         font-family: 'Courier New', Courier, monospace;
         font-size: 11px;
-        padding: 16px;
-        border-radius: 4px;
-        border: 1px solid rgba(232, 227, 216, 0.2);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        backdrop-filter: blur(8px);
+        padding: 14px;
+        border-radius: 3px;
+        border: 1px solid rgba(0,0,0,0.12);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        backdrop-filter: blur(6px);
         z-index: 999;
-        transition: opacity 0.3s ease, transform 0.3s ease;
+        transition: opacity 0.8s ease, transform 0.8s ease;
         pointer-events: auto;
         user-select: none;
       }
       .sim-ui-panel.hidden {
         opacity: 0;
-        transform: translateX(-20px);
+        transform: translateY(-8px);
         pointer-events: none;
       }
       .sim-ui-title {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
         letter-spacing: 1px;
-        margin-bottom: 4px;
-        color: #ffffff;
+        margin-bottom: 2px;
+        color: #1a1a1a;
         text-transform: uppercase;
       }
       .sim-ui-date {
-        color: #a09d96;
-        font-size: 10px;
-        margin-bottom: 12px;
+        color: #66635d;
+        font-size: 9px;
+        margin-bottom: 8px;
       }
       .sim-ui-divider {
         border: 0;
-        border-top: 1px dashed rgba(232, 227, 216, 0.25);
-        margin: 8px 0;
+        border-top: 1px dashed rgba(0, 0, 0, 0.15);
+        margin: 6px 0;
       }
       .sim-ui-row {
         display: flex;
         justify-content: space-between;
-        margin: 4px 0;
+        margin: 3px 0;
       }
       .sim-ui-label {
-        color: #b5b0a5;
+        color: #524f48;
       }
       .sim-ui-value {
         font-weight: bold;
-        color: #ffffff;
+        color: #1a1a1a;
       }
       .sim-ui-bar-container {
         width: 100%;
-        height: 4px;
-        background: rgba(255,255,255,0.1);
-        margin-top: 4px;
-        border-radius: 2px;
+        height: 3px;
+        background: rgba(0,0,0,0.08);
+        margin-top: 3px;
+        border-radius: 1px;
         overflow: hidden;
       }
       .sim-ui-bar-fill {
@@ -139,9 +150,9 @@ export class SceneManager {
         transition: width 0.1s ease, background-color 0.3s ease;
       }
       .sim-ui-footer {
-        margin-top: 12px;
-        font-size: 9px;
-        color: #7a7771;
+        margin-top: 10px;
+        font-size: 8px;
+        color: #8c8880;
         text-align: center;
       }
     `;
@@ -196,7 +207,12 @@ export class SceneManager {
       </div>
     `;
 
-    document.body.appendChild(this.uiContainer);
+    // Lo agregamos dentro del canvas-container para que quede ceñido al lienzo 9:16
+    if (this.container) {
+      this.container.appendChild(this.uiContainer);
+    } else {
+      document.body.appendChild(this.uiContainer);
+    }
 
     this.uiElements = {
       date: document.getElementById("ui-date"),
@@ -209,6 +225,21 @@ export class SceneManager {
       humidity: document.getElementById("ui-humidity"),
       precip: document.getElementById("ui-precip"),
     };
+
+    this.resetUiTimer();
+  }
+
+  resetUiTimer() {
+    if (!this.uiContainer) return;
+    this.uiContainer.classList.remove("hidden");
+    clearTimeout(this.uiTimeout);
+
+    // Autocultado tras 4 segundos de inactividad
+    this.uiTimeout = setTimeout(() => {
+      if (this.uiVisible) {
+        this.uiContainer.classList.add("hidden");
+      }
+    }, 4000);
   }
 
   updateUI(record, stress) {
@@ -244,7 +275,7 @@ export class SceneManager {
     } else if (stress > 0.35) {
       this.uiElements.stressBar.style.background = "#e69500";
     } else {
-      this.uiElements.stressBar.style.background = "#4a90e2";
+      this.uiElements.stressBar.style.background = "#2b5c8f";
     }
 
     if (record) {
@@ -286,8 +317,12 @@ export class SceneManager {
 
   addEvents() {
     window.addEventListener("resize", () => {
-      this.width = window.innerWidth;
-      this.height = window.innerHeight;
+      this.width = this.container
+        ? this.container.clientWidth
+        : window.innerWidth;
+      this.height = this.container
+        ? this.container.clientHeight
+        : window.innerHeight;
 
       this.camera.aspect = this.width / this.height;
       this.camera.updateProjectionMatrix();
@@ -295,7 +330,10 @@ export class SceneManager {
       this.renderer.setSize(this.width, this.height);
     });
 
+    window.addEventListener("mousemove", () => this.resetUiTimer());
+
     window.addEventListener("keydown", (event) => {
+      this.resetUiTimer();
       if (event.key === "h" || event.key === "H") {
         this.toggleUI();
       }
@@ -305,6 +343,7 @@ export class SceneManager {
     });
 
     window.addEventListener("click", () => {
+      this.resetUiTimer();
       if (this.audio && !this.audio.isStarted) {
         this.audio.start();
       }
@@ -332,7 +371,6 @@ export class SceneManager {
           );
         }
 
-        // Llamada ultra limpia al avatar
         if (this.avatar) {
           this.avatar.update(stress, frameCount);
         }
