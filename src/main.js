@@ -3,6 +3,7 @@ import { fetchWeatherData } from "./api.js";
 import { SimulationEngine } from "./simulation.js";
 import { AudioManager } from "./audio.js";
 import { SceneManager } from "./scene.js";
+import { LienzoTexturizado } from "./components/LienzoTexturizado.js";
 
 async function initApp() {
   console.log("🚀 Iniciando Cero Absoluto (Core 3D)...");
@@ -18,6 +19,9 @@ async function initApp() {
   // 3. Inicializar Renderizador Three.js
   const sceneManager = new SceneManager(simulation, audio);
   sceneManager.start();
+
+  // 4. Inicializar Lienzo Texturizado
+  const lienzo = new LienzoTexturizado(sceneManager.scene);
 }
 
 if (document.readyState === "loading") {
